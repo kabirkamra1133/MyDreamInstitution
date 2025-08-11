@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - My Dream Institution</title>
+    <meta name="description" content="Create your account and start your college admission journey with My Dream Institution. Simple, secure, and streamlined signup process.">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-page">
+    <!-- Navigation -->
+    <nav class="navbar auth-nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>My Dream Institution</span>
+                </a>
+            </div>
+            
+            <div class="auth-links">
+                <span>Already have an account?</span>
+                <a href="student-login.html" class="btn btn-outline">Sign In</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Signup Section -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container">
+                <!-- Left Side - Form -->
+                <div class="auth-form-side">
+                    <div class="auth-form">
+                        <div class="form-header">
+                            <h1>Create Your Account</h1>
+                            <p>Start your college admission journey with us</p>
+                        </div>
+
+                        <form id="signupForm" class="signup-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="firstName">First Name</label>
+                                    <input type="text" id="firstName" name="firstName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lastName">Last Name</label>
+                                    <input type="text" id="lastName" name="lastName" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" id="email" name="email" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="phone">Phone Number</label>
+                                <input type="tel" id="phone" name="phone" required>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="password">Password</label>
+                                    <input type="password" id="password" name="password" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirmPassword">Confirm Password</label>
+                                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="dateOfBirth">Date of Birth</label>
+                                <input type="date" id="dateOfBirth" name="dateOfBirth" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="education">Current Education Level</label>
+                                <select id="education" name="education" required>
+                                    <option value="">Select Education Level</option>
+                                    <option value="high-school">High School</option>
+                                    <option value="undergraduate">Undergraduate</option>
+                                    <option value="graduate">Graduate</option>
+                                    <option value="postgraduate">Postgraduate</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="interestedField">Field of Interest</label>
+                                <select id="interestedField" name="interestedField" required>
+                                    <option value="">Select Field</option>
+                                    <option value="engineering">Engineering</option>
+                                    <option value="medicine">Medicine</option>
+                                    <option value="business">Business</option>
+                                    <option value="arts">Arts & Humanities</option>
+                                    <option value="science">Science</option>
+                                    <option value="law">Law</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="terms" name="terms" required>
+                                    <span class="checkmark"></span>
+                                    I agree to the <a href="#terms">Terms of Service</a> and <a href="#privacy">Privacy Policy</a>
+                                </label>
+                            </div>
+
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="newsletter" name="newsletter">
+                                    <span class="checkmark"></span>
+                                    Subscribe to our newsletter for college updates and admission tips
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-full">
+                                <i class="fas fa-user-plus"></i>
+                                Create Account
+                            </button>
+                        </form>
+
+                        <div class="auth-divider">
+                            <span>or</span>
+                        </div>
+
+                        <div class="social-signup">
+                            <button class="btn btn-social btn-google">
+                                <i class="fab fa-google"></i>
+                                Continue with Google
+                            </button>
+                            <button class="btn btn-social btn-facebook">
+                                <i class="fab fa-facebook-f"></i>
+                                Continue with Facebook
+                            </button>
+                        </div>
+
+                        <div class="auth-footer">
+                            <p>Already have an account? <a href="student-login.html">Sign in here</a></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side - Info -->
+                <div class="auth-info-side">
+                    <div class="info-content">
+                        <h2>Join Thousands of Students</h2>
+                        <p>Discover your dream college and simplify your admission process with our comprehensive platform.</p>
+                        
+                        <div class="info-features">
+                            <div class="info-feature">
+                                <i class="fas fa-university"></i>
+                                <div>
+                                    <h3>1000+ Colleges</h3>
+                                    <p>Access to top colleges and universities</p>
+                                </div>
+                            </div>
+                            <div class="info-feature">
+                                <i class="fas fa-file-alt"></i>
+                                <div>
+                                    <h3>Single Application</h3>
+                                    <p>Apply to multiple colleges with one form</p>
+                                </div>
+                            </div>
+                            <div class="info-feature">
+                                <i class="fas fa-chart-line"></i>
+                                <div>
+                                    <h3>95% Success Rate</h3>
+                                    <p>High admission success rate for our students</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="testimonial">
+                            <div class="testimonial-content">
+                                <p>"My Dream Institution made my college application process so much easier. I got admitted to my dream university!"</p>
+                                <div class="testimonial-author">
+                                    <strong>Sarah Johnson</strong>
+                                    <span>Student, MIT</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer auth-footer">
+        <div class="container">
+            <div class="footer-simple">
+                <div class="footer-links">
+                    <a href="#about">About</a>
+                    <a href="#privacy">Privacy</a>
+                    <a href="#terms">Terms</a>
+                    <a href="#contact">Contact</a>
+                </div>
+                <div class="copyright">
+                    <p>&copy; 2024 My Dream Institution. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

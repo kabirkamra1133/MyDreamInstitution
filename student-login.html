@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login - My Dream Institution</title>
+    <meta name="description" content="Login to your student account and track your college applications with My Dream Institution.">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-page">
+    <!-- Navigation -->
+    <nav class="navbar auth-nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>My Dream Institution</span>
+                </a>
+            </div>
+            
+            <div class="auth-links">
+                <span>Don't have an account?</span>
+                <a href="signup.html" class="btn btn-outline">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Section -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container login-container">
+                <!-- Left Side - Form -->
+                <div class="auth-form-side">
+                    <div class="auth-form">
+                        <div class="form-header">
+                            <div class="user-type-icon">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                            <h1>Student Login</h1>
+                            <p>Welcome back! Sign in to your student account</p>
+                        </div>
+
+                        <form id="studentLoginForm" class="login-form">
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-envelope"></i>
+                                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password">Password</label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-lock"></i>
+                                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                                    <button type="button" class="password-toggle" id="togglePassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-options">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="rememberMe" name="rememberMe">
+                                    <span class="checkmark"></span>
+                                    Remember me
+                                </label>
+                                <a href="#forgot" class="forgot-link">Forgot Password?</a>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-full">
+                                <i class="fas fa-sign-in-alt"></i>
+                                Sign In
+                            </button>
+                        </form>
+
+                        <div class="auth-divider">
+                            <span>or</span>
+                        </div>
+
+                        <div class="social-login">
+                            <button class="btn btn-social btn-google">
+                                <i class="fab fa-google"></i>
+                                Continue with Google
+                            </button>
+                        </div>
+
+                        <div class="auth-footer">
+                            <p>Don't have an account? <a href="signup.html">Create one here</a></p>
+                        </div>
+
+                        <div class="login-types">
+                            <p>Are you a college representative?</p>
+                            <div class="login-type-buttons">
+                                <a href="college-login.html" class="btn btn-outline">
+                                    <i class="fas fa-university"></i>
+                                    College Login
+                                </a>
+                                <a href="admin-login.html" class="btn btn-outline">
+                                    <i class="fas fa-user-shield"></i>
+                                    Admin Login
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side - Info -->
+                <div class="auth-info-side">
+                    <div class="info-content">
+                        <h2>Track Your Applications</h2>
+                        <p>Access your personalized dashboard to monitor application progress, receive updates, and manage your college journey.</p>
+                        
+                        <div class="dashboard-preview">
+                            <div class="preview-item">
+                                <i class="fas fa-chart-pie"></i>
+                                <div>
+                                    <h3>Application Dashboard</h3>
+                                    <p>View all your applications in one place</p>
+                                </div>
+                            </div>
+                            <div class="preview-item">
+                                <i class="fas fa-bell"></i>
+                                <div>
+                                    <h3>Real-time Updates</h3>
+                                    <p>Get notified about status changes instantly</p>
+                                </div>
+                            </div>
+                            <div class="preview-item">
+                                <i class="fas fa-calendar"></i>
+                                <div>
+                                    <h3>Important Dates</h3>
+                                    <p>Never miss deadlines and important dates</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="success-stats">
+                            <div class="stat">
+                                <div class="stat-number">95%</div>
+                                <div class="stat-label">Success Rate</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-number">1000+</div>
+                                <div class="stat-label">Students</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-number">500+</div>
+                                <div class="stat-label">Colleges</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer auth-footer">
+        <div class="container">
+            <div class="footer-simple">
+                <div class="footer-links">
+                    <a href="#about">About</a>
+                    <a href="#privacy">Privacy</a>
+                    <a href="#terms">Terms</a>
+                    <a href="#contact">Contact</a>
+                </div>
+                <div class="copyright">
+                    <p>&copy; 2024 My Dream Institution. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Login - My Dream Institution</title>
+    <meta name="description" content="College representative login portal for managing admissions and applications.">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-page">
+    <!-- Navigation -->
+    <nav class="navbar auth-nav">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>My Dream Institution</span>
+                </a>
+            </div>
+            
+            <div class="auth-links">
+                <span>Need an account?</span>
+                <a href="#contact" class="btn btn-outline">Contact Us</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Section -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container login-container">
+                <!-- Left Side - Form -->
+                <div class="auth-form-side">
+                    <div class="auth-form">
+                        <div class="form-header">
+                            <div class="user-type-icon college-icon">
+                                <i class="fas fa-university"></i>
+                            </div>
+                            <h1>College Portal</h1>
+                            <p>Welcome back! Access your institution dashboard</p>
+                        </div>
+
+                        <form id="collegeLoginForm" class="login-form">
+                            <div class="form-group">
+                                <label for="collegeId">College ID / Institution Code</label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-id-card"></i>
+                                    <input type="text" id="collegeId" name="collegeId" placeholder="Enter your college ID" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Official Email</label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-envelope"></i>
+                                    <input type="email" id="email" name="email" placeholder="Enter institutional email" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password">Password</label>
+                                <div class="input-with-icon">
+                                    <i class="fas fa-lock"></i>
+                                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                                    <button type="button" class="password-toggle" id="toggleCollegePassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-options">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="collegeRememberMe" name="collegeRememberMe">
+                                    <span class="checkmark"></span>
+                                    Remember this device
+                                </label>
+                                <a href="#forgot" class="forgot-link">Forgot Password?</a>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-full">
+                                <i class="fas fa-sign-in-alt"></i>
+                                Access Portal
+                            </button>
+                        </form>
+
+                        <div class="auth-footer">
+                            <p>New to our platform? <a href="#contact">Contact us for setup</a></p>
+                        </div>
+
+                        <div class="login-types">
+                            <p>Looking for a different portal?</p>
+                            <div class="login-type-buttons">
+                                <a href="student-login.html" class="btn btn-outline">
+                                    <i class="fas fa-user-graduate"></i>
+                                    Student Portal
+                                </a>
+                                <a href="admin-login.html" class="btn btn-outline">
+                                    <i class="fas fa-user-shield"></i>
+                                    Admin Portal
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side - Info -->
+                <div class="auth-info-side">
+                    <div class="info-content">
+                        <h2>Manage Your Admissions</h2>
+                        <p>Access your comprehensive college dashboard to manage applications, review candidates, and streamline your admission process.</p>
+                        
+                        <div class="dashboard-preview">
+                            <div class="preview-item">
+                                <i class="fas fa-users"></i>
+                                <div>
+                                    <h3>Application Management</h3>
+                                    <p>Review and process student applications</p>
+                                </div>
+                            </div>
+                            <div class="preview-item">
+                                <i class="fas fa-chart-line"></i>
+                                <div>
+                                    <h3>Analytics Dashboard</h3>
+                                    <p>Track admission trends and statistics</p>
+                                </div>
+                            </div>
+                            <div class="preview-item">
+                                <i class="fas fa-envelope"></i>
+                                <div>
+                                    <h3>Communication Tools</h3>
+                                    <p>Connect with prospective students</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="college-benefits">
+                            <h3>Why Colleges Choose Us</h3>
+                            <ul>
+                                <li><i class="fas fa-check"></i> Streamlined application processing</li>
+                                <li><i class="fas fa-check"></i> Advanced filtering and search tools</li>
+                                <li><i class="fas fa-check"></i> Automated candidate matching</li>
+                                <li><i class="fas fa-check"></i> Comprehensive analytics and reports</li>
+                            </ul>
+                        </div>
+
+                        <div class="partnership-stats">
+                            <div class="stat">
+                                <div class="stat-number">500+</div>
+                                <div class="stat-label">Partner Colleges</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-number">50K+</div>
+                                <div class="stat-label">Applications</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-number">98%</div>
+                                <div class="stat-label">Satisfaction</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer auth-footer">
+        <div class="container">
+            <div class="footer-simple">
+                <div class="footer-links">
+                    <a href="#about">About</a>
+                    <a href="#privacy">Privacy</a>
+                    <a href="#terms">Terms</a>
+                    <a href="#contact">Contact</a>
+                </div>
+                <div class="copyright">
+                    <p>&copy; 2024 My Dream Institution. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
