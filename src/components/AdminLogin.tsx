@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, User, Key, Eye, EyeOff, LogIn, Shield, AlertTriangle, Settings, BarChart, Users, Database } from 'lucide-react';
 
 const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -8,13 +7,12 @@ const AdminLogin = () => {
     username: '',
     password: '',
     securityCode: '',
-    keepSignedIn: false
+    adminRememberMe: false
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Admin login submitted:', formData);
-    // Handle login logic here
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,195 +24,222 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen font-open-sans" style={{
+      background: 'linear-gradient(135deg, #1a1a2e, #16213e)'
+    }}>
       {/* Navigation */}
-      <nav className="bg-slate-900/50 backdrop-blur-sm border-b border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center space-x-2">
-              <GraduationCap className="w-8 h-8 text-blue-400" />
-              <span className="text-xl font-bold text-white">My Dream Institution</span>
-            </Link>
-            
-            <Link to="/" className="bg-slate-700 text-white px-4 py-2 rounded-lg hover:bg-slate-600 transition-colors">
-              Back to Home
-            </Link>
-          </div>
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-6xl mx-auto px-8 py-4 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 font-poppins font-semibold text-xl text-blue-900 no-underline">
+            <i className="fas fa-graduation-cap text-2xl"></i>
+            <span>My Dream Institution</span>
+          </Link>
+          
+          <Link to="/" className="px-6 py-2 border-2 border-blue-900 text-blue-900 rounded-lg font-medium transition-all duration-300 hover:bg-blue-900 hover:text-white">
+            Back to Home
+          </Link>
         </div>
       </nav>
 
       {/* Login Section */}
-      <section className="py-12 flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <div className="max-w-md w-full mx-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-8">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-red-500/20 border border-red-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8 text-red-400" />
-              </div>
-              <h1 className="text-3xl font-bold text-white mb-2">Admin Panel</h1>
-              <p className="text-slate-400">Authorized access only</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Username Field */}
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-slate-300 mb-2">
-                  Admin Username
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    placeholder="Enter admin username"
-                    className="w-full pl-12 pr-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all placeholder-slate-400"
-                    required
-                  />
+      <section className="py-12">
+        <div className="max-w-lg mx-auto px-8">
+          <div className="max-w-md mx-auto">
+            <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <i className="fas fa-user-shield text-3xl text-red-600"></i>
                 </div>
+                <h1 className="text-3xl font-bold text-slate-800 mb-2 font-poppins">Admin Panel</h1>
+                <p className="text-slate-500">Authorized access only</p>
               </div>
 
-              {/* Password Field */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-                  Admin Password
-                </label>
-                <div className="relative">
-                  <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="Enter admin password"
-                    className="w-full pl-12 pr-12 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all placeholder-slate-400"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Security Code Field */}
-              <div>
-                <label htmlFor="securityCode" className="block text-sm font-medium text-slate-300 mb-2">
-                  Security Code (2FA)
-                </label>
-                <div className="relative">
-                  <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="text"
-                    id="securityCode"
-                    name="securityCode"
-                    value={formData.securityCode}
-                    onChange={handleInputChange}
-                    placeholder="Enter 2FA code"
-                    className="w-full pl-12 pr-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all placeholder-slate-400"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Keep Signed In */}
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="keepSignedIn"
-                  id="keepSignedIn"
-                  checked={formData.keepSignedIn}
-                  onChange={handleInputChange}
-                  className="w-4 h-4 text-red-500 bg-slate-700 border-slate-600 rounded focus:ring-red-500"
-                />
-                <label htmlFor="keepSignedIn" className="ml-2 text-sm text-slate-300">
-                  Keep me signed in
-                </label>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                className="w-full flex items-center justify-center space-x-2 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors font-semibold"
-              >
-                <LogIn className="w-5 h-5" />
-                <span>Access Admin Panel</span>
-              </button>
-            </form>
-
-            {/* Security Notice */}
-            <div className="mt-8 p-4 bg-yellow-900/20 border border-yellow-800/30 rounded-lg">
-              <div className="flex items-start space-x-3">
-                <AlertTriangle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Username Field */}
                 <div>
-                  <h3 className="text-yellow-400 font-semibold text-sm mb-1">Security Notice</h3>
-                  <p className="text-yellow-300/80 text-xs">
-                    This is a restricted area. All access attempts are logged and monitored. Unauthorized access is prohibited.
-                  </p>
+                  <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-2">
+                    Admin Username
+                  </label>
+                  <div className="relative">
+                    <i className="fas fa-user-shield absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    <input
+                      type="text"
+                      id="username"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      placeholder="Enter admin username"
+                      className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
+                    Admin Password
+                  </label>
+                  <div className="relative">
+                    <i className="fas fa-key absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      id="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="Enter admin password"
+                      className="w-full pl-12 pr-12 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Security Code */}
+                <div>
+                  <label htmlFor="securityCode" className="block text-sm font-medium text-slate-700 mb-2">
+                    Security Code
+                  </label>
+                  <div className="relative">
+                    <i className="fas fa-shield-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    <input
+                      type="text"
+                      id="securityCode"
+                      name="securityCode"
+                      value={formData.securityCode}
+                      onChange={handleInputChange}
+                      placeholder="Enter 2FA code"
+                      className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Remember Me */}
+                <div className="flex items-center">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="adminRememberMe"
+                      checked={formData.adminRememberMe}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-slate-600">Keep me signed in</span>
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full flex items-center justify-center gap-2 text-white py-3 rounded-lg font-medium shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+                  style={{
+                    background: 'linear-gradient(135deg, #ef4444, #f87171)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #dc2626, #ef4444)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+                  }}
+                >
+                  <i className="fas fa-sign-in-alt"></i>
+                  Access Admin Panel
+                </button>
+              </form>
+
+              {/* Security Notice */}
+              <div className="mt-6 rounded-lg p-4" style={{
+                background: '#fef3c7',
+                border: '1px solid #f59e0b'
+              }}>
+                <div className="flex items-start gap-3">
+                  <i className="fas fa-exclamation-triangle mt-1" style={{ color: '#f59e0b', fontSize: '1.25rem' }}></i>
+                  <div>
+                    <h3 className="font-semibold mb-2" style={{ color: '#92400e' }}>Security Notice</h3>
+                    <p className="text-sm leading-relaxed" style={{ color: '#92400e' }}>
+                      This is a restricted area. All access attempts are logged and monitored. Unauthorized access is prohibited.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Login Types */}
+              <div className="mt-8">
+                <p className="text-center text-slate-600 mb-4">Looking for a different login?</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link
+                    to="/student-login"
+                    className="flex items-center justify-center gap-2 border border-slate-300 py-2 px-4 rounded-lg hover:bg-slate-50 transition-colors text-sm"
+                  >
+                    <i className="fas fa-user-graduate"></i>
+                    <span>Student Login</span>
+                  </Link>
+                  <Link
+                    to="/college-login"
+                    className="flex items-center justify-center gap-2 border border-slate-300 py-2 px-4 rounded-lg hover:bg-slate-50 transition-colors text-sm"
+                  >
+                    <i className="fas fa-university"></i>
+                    <span>College Login</span>
+                  </Link>
                 </div>
               </div>
             </div>
 
-            {/* Other Login Types */}
-            <div className="mt-8 pt-6 border-t border-slate-700">
-              <p className="text-slate-400 text-center mb-4 text-sm">Looking for a different portal?</p>
-              <div className="flex flex-col gap-2">
-                <Link
-                  to="/student-login"
-                  className="flex items-center justify-center space-x-2 border border-slate-600 text-slate-300 py-2 px-4 rounded-lg hover:bg-slate-700 transition-colors text-sm"
-                >
-                  <GraduationCap className="w-4 h-4" />
-                  <span>Student Login</span>
-                </Link>
-                <Link
-                  to="/college-login"
-                  className="flex items-center justify-center space-x-2 border border-slate-600 text-slate-300 py-2 px-4 rounded-lg hover:bg-slate-700 transition-colors text-sm"
-                >
-                  <Settings className="w-4 h-4" />
-                  <span>College Login</span>
-                </Link>
+            {/* Admin Features */}
+            <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-bold text-slate-800 mb-4 font-poppins text-center">Admin Dashboard Features</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="flex flex-col items-center text-center p-3">
+                  <i className="fas fa-chart-bar text-2xl text-blue-600 mb-2"></i>
+                  <span className="text-sm text-slate-600">Analytics & Reports</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-3">
+                  <i className="fas fa-users text-2xl text-blue-600 mb-2"></i>
+                  <span className="text-sm text-slate-600">User Management</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-3">
+                  <i className="fas fa-university text-2xl text-blue-600 mb-2"></i>
+                  <span className="text-sm text-slate-600">College Management</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-3">
+                  <i className="fas fa-file-alt text-2xl text-blue-600 mb-2"></i>
+                  <span className="text-sm text-slate-600">Application Review</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-3">
+                  <i className="fas fa-cog text-2xl text-blue-600 mb-2"></i>
+                  <span className="text-sm text-slate-600">System Settings</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-3">
+                  <i className="fas fa-shield-alt text-2xl text-blue-600 mb-2"></i>
+                  <span className="text-sm text-slate-600">Security Controls</span>
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Admin Features Preview */}
-          <div className="mt-8 grid grid-cols-2 gap-4 text-center">
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-              <BarChart className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-              <div className="text-white text-sm font-medium">Analytics</div>
-              <div className="text-slate-400 text-xs">Platform Insights</div>
-            </div>
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-              <Users className="w-6 h-6 text-green-400 mx-auto mb-2" />
-              <div className="text-white text-sm font-medium">User Management</div>
-              <div className="text-slate-400 text-xs">Control Access</div>
-            </div>
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-              <Database className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-              <div className="text-white text-sm font-medium">Database</div>
-              <div className="text-slate-400 text-xs">System Data</div>
-            </div>
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-              <Settings className="w-6 h-6 text-orange-400 mx-auto mb-2" />
-              <div className="text-white text-sm font-medium">Settings</div>
-              <div className="text-slate-400 text-xs">Platform Config</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 border-t border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center">
-            <p className="text-slate-400 text-sm">© 2024 My Dream Institution. All rights reserved.</p>
+      <footer className="bg-white border-t border-slate-200 py-8">
+        <div className="max-w-6xl mx-auto px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex gap-6">
+              <a href="#about" className="text-slate-600 hover:text-blue-600 transition-colors">About</a>
+              <a href="#privacy" className="text-slate-600 hover:text-blue-600 transition-colors">Privacy</a>
+              <a href="#terms" className="text-slate-600 hover:text-blue-600 transition-colors">Terms</a>
+              <a href="#contact" className="text-slate-600 hover:text-blue-600 transition-colors">Contact</a>
+            </div>
+            <div>
+              <p className="text-slate-600">© 2024 My Dream Institution. All rights reserved.</p>
+            </div>
           </div>
         </div>
       </footer>
