@@ -48,6 +48,7 @@ const Signup = () => {
       });
     }
     else{
+      console.log("ok")
       alert("Error in registration: " + res.data.error);
       return;
     }
