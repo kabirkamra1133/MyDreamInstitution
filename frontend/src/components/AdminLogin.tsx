@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -10,9 +11,23 @@ const AdminLogin = () => {
     adminRememberMe: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Admin login submitted:', formData);
+    try {
+      const { username, password } = formData;
+      // admin username maps to email in backend; adjust if needed
+      const res = await axios.post('http://localhost:3000/api/auth/admin/login', { email: username, password });
+      const token = res?.data?.token;
+      if (token) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('role', 'admin');
+      }
+      console.log('Admin login success', res.data);
+    } catch (error) {
+      const err = error as { response?: { data?: { error?: string } } };
+      console.error('Admin login error', err);
+      alert(err?.response?.data?.error || 'Login failed');
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

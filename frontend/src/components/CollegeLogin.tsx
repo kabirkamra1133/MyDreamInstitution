@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const CollegeLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -10,9 +11,22 @@ const CollegeLogin = () => {
     collegeRememberMe: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('College login submitted:', formData);
+    try {
+      const { email, password } = formData;
+      const res = await axios.post('http://localhost:3000/api/auth/college/login', { email, password });
+      const token = res?.data?.token;
+      if (token) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('role', 'college');
+      }
+      console.log('College login success', res.data);
+    } catch (error) {
+      const err = error as { response?: { data?: { error?: string } } };
+      console.error('College login error', err);
+      alert(err?.response?.data?.error || 'Login failed');
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
