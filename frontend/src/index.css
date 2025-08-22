@@ -2,72 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* My Dream Institution Design System - Education Platform Theme
+Professional blue-based design with modern typography and elegant styling.
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 240 16% 98%;
-    --foreground: 224 15% 15%;
+    /* Core Background & Surface Colors */
+    --background: 240 33% 97%;
+    --foreground: 215 25% 15%;
 
+    /* Card & Surface Elements */
     --card: 0 0% 100%;
-    --card-foreground: 224 15% 15%;
+    --card-foreground: 215 25% 15%;
 
+    /* Popover & Floating Elements */
     --popover: 0 0% 100%;
-    --popover-foreground: 224 15% 15%;
+    --popover-foreground: 215 25% 15%;
 
-    --primary: 217 91% 60%;
+    /* Primary Brand Colors - Professional Blue */
+    --primary: 224 87% 50%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 217 91% 50%;
+    --primary-light: 224 87% 60%;
+    --primary-dark: 224 87% 40%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 224 15% 25%;
+    /* Secondary Colors - Subtle Grays */
+    --secondary: 215 20% 96%;
+    --secondary-foreground: 215 25% 15%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 8% 46%;
+    /* Muted Colors for Subtle Elements */
+    --muted: 215 20% 96%;
+    --muted-foreground: 215 15% 50%;
 
-    --accent: 217 91% 95%;
-    --accent-foreground: 217 91% 30%;
+    /* Accent Colors - Complementary */
+    --accent: 45 93% 47%;
+    --accent-foreground: 215 25% 15%;
 
+    /* Status Colors */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    /* Border & Input Styling */
+    --border: 215 20% 88%;
+    --input: 215 20% 88%;
+    --ring: 224 87% 50%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;
-
+    /* Border Radius */
     --radius: 0.75rem;
 
-    /* Admin Portal Specific Colors */
-    --admin-primary: 230 81% 60%;
-    --admin-secondary: 217 91% 60%;
-    --admin-accent: 199 89% 48%;
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(224 87% 50%), hsl(224 87% 60%));
+    --gradient-hero: linear-gradient(135deg, hsl(224 87% 40%), hsl(224 87% 60%));
+    --gradient-subtle: linear-gradient(180deg, hsl(240 33% 97%), hsl(215 20% 96%));
 
-    /* Professional gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 50%));
-    --gradient-hero: linear-gradient(135deg, hsl(217 91% 60%), hsl(236 72% 79%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 14% 98%));
-    --gradient-admin: linear-gradient(135deg, hsl(var(--admin-primary)), hsl(var(--admin-secondary)));
-    
-    /* Professional shadows */
-    --shadow-sm: 0 2px 4px -1px hsl(220 13% 91% / 0.6);
-    --shadow-md: 0 4px 12px -2px hsl(220 13% 91% / 0.8);
-    --shadow-lg: 0 10px 24px -4px hsl(220 13% 91% / 0.9);
-    --shadow-card: 0 4px 20px -2px hsl(217 91% 60% / 0.1);
-    --shadow-admin-elegant: 0 25px 50px -12px hsl(var(--admin-primary) / 0.25);
-    --shadow-admin-glow: 0 0 60px hsl(var(--admin-primary) / 0.3);
-    --shadow-admin-subtle: 0 8px 25px -8px hsl(var(--admin-primary) / 0.15);
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(215 25% 15% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(215 25% 15% / 0.1), 0 2px 4px -1px hsl(215 25% 15% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(215 25% 15% / 0.1), 0 4px 6px -2px hsl(215 25% 15% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(215 25% 15% / 0.1), 0 10px 10px -5px hsl(215 25% 15% / 0.04);
+    --shadow-elegant: 0 10px 30px -10px hsl(224 87% 50% / 0.3);
 
-    /* Professional animations */
+    /* Animation & Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-fast: all 0.15s ease-out;
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --sidebar-background: 0 0% 98%;
 
@@ -131,6 +131,66 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-inter;
+  }
+}
+
+/* Custom component styles using design system tokens */
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary-dark;
+    @apply px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg;
+    @apply transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-muted;
+    @apply px-6 py-3 rounded-lg font-semibold shadow-sm hover:shadow-md;
+    @apply transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-accent-foreground hover:opacity-90;
+    @apply px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg;
+    @apply transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground;
+    @apply px-6 py-3 rounded-lg font-semibold;
+    @apply transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+
+  .tab-active {
+    @apply border-primary text-primary bg-primary/5;
+  }
+
+  .form-input {
+    @apply block w-full rounded-lg border border-input bg-card px-4 py-3;
+    @apply text-foreground placeholder:text-muted-foreground;
+    @apply focus:border-ring focus:ring-2 focus:ring-ring focus:ring-offset-0;
+    @apply transition-all duration-200;
+  }
+
+  .card-elevated {
+    @apply bg-card rounded-xl shadow-lg hover:shadow-xl;
+    @apply transition-all duration-300 hover:-translate-y-1;
+  }
+
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
+  .loader {
+    @apply inline-block w-8 h-8 border-4 border-solid border-primary;
+    @apply border-r-transparent rounded-full animate-spin;
   }
 }

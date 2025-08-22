@@ -1,12 +1,7 @@
-import CollegeAdminPortal from "@/components/college/CollegeAdminPortal";
-import AdminPortal from "@/components/admin/AdminPortal";
+import CollegeAdmissionApp from './CollegeAdmission';
 
 const Index = () => {
-  // Toggle between college and admin portal based on route or state
-  // For now, showing both - you can add routing logic here
-  const isAdminPortal = window.location.pathname.includes('admin');
-  
-  return isAdminPortal ? <AdminPortal /> : <CollegeAdminPortal />;
+  return <CollegeAdmissionApp />;
 };
 
 export default Index;
