@@ -140,7 +140,7 @@ All colors MUST be HSL.
   .btn-primary {
     @apply bg-primary text-primary-foreground hover:bg-primary-dark;
     @apply px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg;
-    @apply transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  @apply transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
   }
 
   .btn-secondary {
@@ -193,4 +193,11 @@ All colors MUST be HSL.
     @apply inline-block w-8 h-8 border-4 border-solid border-primary;
     @apply border-r-transparent rounded-full animate-spin;
   }
+}
+
+@layer utilities {
+  .font-inter { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+  /* Explicit utilities to ensure @apply can resolve color tokens that rely on CSS variables */
+  .bg-accent { background-color: hsl(var(--accent)); }
+  .text-accent-foreground { color: hsl(var(--accent-foreground)); }
 }

@@ -60,12 +60,17 @@ export const loginStudent = async (req, res) => {
 // College registration (optional) and login
 export const registerCollege = async (req, res) => {
   try {
-    const { name, email, password, address, contactNumber } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ error: 'Please fill all required fields' });
+    const { instituteCode, email, password } = req.body;
+    console.log({instituteCode,email,password})
+    // if (!instituteCode || !email || !password) return res.status(400).json({ error: 'Please fill all required fieldsdsds' });
+    if (!instituteCode) console.log("Missing instituteCode");
+if (!email) console.log("Missing email");
+if (!password) console.log("Missing password");
+
     const exists = await College.findOne({ email });
     if (exists) return res.status(400).json({ error: 'College already exists' });
     const hashed = await bcrypt.hash(password, 10);
-    const college = new College({ name, email, password: hashed, address, contactNumber });
+    const college = new College({ instituteCode, email, password: hashed });
     await college.save();
     return res.status(201).json({ message: 'College registered' });
   } catch (err) {
@@ -77,7 +82,7 @@ export const registerCollege = async (req, res) => {
 export const loginCollege = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Please enter all fields' });
+    if (!email || !password) return res.status(400).json({ error: 'Pslease enter all fields' });
     const college = await College.findOne({ email });
     if (!college) return res.status(401).json({ error: 'Invalid credentials' });
     const isCorrect = await bcrypt.compare(password, college.password);
@@ -94,7 +99,7 @@ export const loginCollege = async (req, res) => {
 export const registerAdmin = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ error: 'Please fill all required fields' });
+    // if (!name || !email || !password) return res.status(400).json({ error: 'Please fill all required fields' });
     const exists = await Admin.findOne({ email });
     if (exists) return res.status(400).json({ error: 'Admin already exists' });
     const hashed = await bcrypt.hash(password, 10);

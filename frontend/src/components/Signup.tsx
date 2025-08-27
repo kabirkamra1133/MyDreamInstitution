@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { useMainContext } from '@/context/mainContext';
 const Signup = () => {
+  const {server} = useMainContext();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -30,7 +32,7 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if(formData.confirmPassword!=formData.password) alert("Password and confirmPassword doesn't match");
-    const res = await axios.post('http://localhost:3000/api/users/register',formData);
+    const res = await axios.post(`${server}/api/auth/student/register`,formData);
     if(res.status==200) {
       alert("User registered successfully");
       setFormData({

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, FC } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // --- TYPE DEFINITIONS ---
 // Defines the structure for an educational qualification record.
@@ -14,12 +15,19 @@ interface IQualification {
 
 // Defines the structure for a college record.
 interface ICollege {
-  id: number;
-  name: string;
-  city: string;
-  state: string;
-  course: string;
-  rating: number;
+    id: string; // CollegeAdmin id
+    collegeId?: string | null; // linked College id
+    name: string;
+    email?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    contactNumber?: string;
+    createdAt?: string;
+    courses?: string[]; // array of course names
+    logo?: string | null;
+    coverPhoto?: string | null;
+    rating?: number | null;
 }
 
 // --- SVG ICONS ---
@@ -421,16 +429,17 @@ const CollegeSearchFilters: FC = () => (
 interface CollegeCardProps {
     college: ICollege;
     isShortlisted: boolean;
-    onShortlistToggle: (id: number) => void;
+    onShortlistToggle: (id: string) => void;
+    onViewDetails?: (college: ICollege) => void;
 }
-const CollegeCard: FC<CollegeCardProps> = ({ college, isShortlisted, onShortlistToggle }) => (
+const CollegeCard: FC<CollegeCardProps> = ({ college, isShortlisted, onShortlistToggle, onViewDetails }) => (
     <div className="card-elevated p-6">
         <div className="flex justify-between items-start">
             <div className="flex-1">
                 <h4 className="text-lg font-bold text-foreground mb-2">{college.name}</h4>
                 <p className="text-sm text-muted-foreground mb-1">📍 {college.city}, {college.state}</p>
                 <p className="text-sm text-foreground mb-4">
-                    <span className="font-semibold">Key Course:</span> {college.course}
+                    <span className="font-semibold">Key Course:</span> {college.courses?.[0] || 'Various Programs'}
                 </p>
             </div>
             <div className="flex-shrink-0 ml-4">
@@ -439,8 +448,8 @@ const CollegeCard: FC<CollegeCardProps> = ({ college, isShortlisted, onShortlist
                 </span>
             </div>
         </div>
-        <div className="flex justify-between items-center pt-4 border-t border-border">
-            <button className="btn-secondary text-sm">
+            <div className="flex justify-between items-center pt-4 border-t border-border">
+            <button className="btn-secondary text-sm" onClick={() => onViewDetails && onViewDetails(college)}>
                 📋 View Details
             </button>
             <button 
@@ -461,7 +470,7 @@ const CollegeCard: FC<CollegeCardProps> = ({ college, isShortlisted, onShortlist
 interface ShortlistedCollegesProps {
     colleges: ICollege[];
     onCompare: () => void;
-    onRemove: (id: number) => void;
+    onRemove: (id: string) => void;
 }
 const ShortlistedColleges: FC<ShortlistedCollegesProps> = ({ colleges, onCompare, onRemove }) => (
     <div className="mt-12">
@@ -501,7 +510,7 @@ const ShortlistedColleges: FC<ShortlistedCollegesProps> = ({ colleges, onCompare
                                 <tr key={college.id}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{college.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{college.city}, {college.state}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{college.course}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{college.courses?.[0] || 'Various Programs'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">⭐ {college.rating}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                                         <button 
@@ -558,11 +567,12 @@ const GeminiModal: FC<GeminiModalProps> = ({ isOpen, title, content, isLoading, 
 
 // --- MAIN APP COMPONENT ---
 const CollegeAdmissionApp: FC = () => {
+    const navigate = useNavigate();
     // State Management
     const [activeTab, setActiveTab] = useState<'profile' | 'search'>('profile');
     const [qualifications, setQualifications] = useState<IQualification[]>([]);
     const [colleges, setColleges] = useState<ICollege[]>([]);
-    const [shortlisted, setShortlisted] = useState<number[]>([]);
+    const [shortlisted, setShortlisted] = useState<string[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
     const [modalContent, setModalContent] = useState('');
@@ -574,12 +584,18 @@ const CollegeAdmissionApp: FC = () => {
             { id: 1, degree: 'B.Sc. Computer Science', board: 'University of Mumbai', subjects: 'CS, Math, Physics', year: '2023', grade: '8.5 CGPA', doc: 'BSc_Marksheet.pdf' },
             { id: 2, degree: '12th (HSC)', board: 'Maharashtra State Board', subjects: 'Physics, Chemistry, Math', year: '2020', grade: '88.5%', doc: 'HSC_Marksheet.pdf' },
         ]);
-        setColleges([
-            { id: 1, name: 'Indian Institute of Technology Bombay', city: 'Mumbai', state: 'Maharashtra', course: 'B.Tech Computer Science', rating: 4.9 },
-            { id: 2, name: 'Indian Institute of Science', city: 'Bengaluru', state: 'Karnataka', course: 'B.S. Research', rating: 4.8 },
-            { id: 3, name: 'Delhi University', city: 'Delhi', state: 'Delhi', course: 'B.Sc. Computer Science', rating: 4.7 },
-            { id: 4, name: 'Anna University', city: 'Chennai', state: 'Tamil Nadu', course: 'B.E. Computer Science', rating: 4.6 },
-        ]);
+
+        // fetch colleges from backend
+        (async () => {
+            try {
+                const res = await fetch('/api/colleges');
+                if (!res.ok) throw new Error('Failed to fetch colleges');
+                const body = await res.json();
+                setColleges(body.data || []);
+            } catch (err) {
+                console.error('Error loading colleges', err);
+            }
+        })();
     }, []);
 
     const handleSuggestCareers = async () => {
@@ -597,18 +613,18 @@ const CollegeAdmissionApp: FC = () => {
         setIsModalOpen(true);
         setIsLoading(true);
         setModalTitle('AI College Comparison');
-        const collegeNames = colleges.filter(c => shortlisted.includes(c.id)).map(c => c.name).join(' and ');
+    const collegeNames = colleges.filter(c => shortlisted.includes(c.id)).map(c => c.name).join(' and ');
         const prompt = `Provide a detailed comparison between ${collegeNames}. Compare them on: **Key Programs**, **Campus Life**, **Placement Statistics**, and **Notable Alumni**. Use bullet points.`;
         const response = await callGeminiAPI(prompt);
         setModalContent(response.replace(/\n/g, '<br>'));
         setIsLoading(false);
     };
     
-    const handleShortlistToggle = (id: number) => {
+    const handleShortlistToggle = (id: string) => {
         setShortlisted(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
-    const handleRemoveShortlisted = (id: number) => {
+    const handleRemoveShortlisted = (id: string) => {
         setShortlisted(prev => prev.filter(i => i !== id));
     };
 
@@ -642,6 +658,7 @@ const CollegeAdmissionApp: FC = () => {
                                             college={college} 
                                             isShortlisted={shortlisted.includes(college.id)}
                                             onShortlistToggle={handleShortlistToggle}
+                                            onViewDetails={(c) => navigate(`/colleges/${c.id}`)}
                                         />
                                     ))}
                                 </div>

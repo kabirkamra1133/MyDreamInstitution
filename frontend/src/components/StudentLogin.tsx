@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const StudentLogin = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -20,6 +21,7 @@ const StudentLogin = () => {
         localStorage.setItem('token', token);
         localStorage.setItem('role', 'student');
       }
+      navigate("/more")
       console.log('Student login success:', res.data);
       // redirect or update UI as needed
     } catch (error) {

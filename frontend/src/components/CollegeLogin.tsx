@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const CollegeLogin = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     collegeId: '',
@@ -21,6 +22,7 @@ const CollegeLogin = () => {
         localStorage.setItem('token', token);
         localStorage.setItem('role', 'college');
       }
+      navigate('/yo'); // Redirect to college dashboard
       console.log('College login success', res.data);
     } catch (error) {
       const err = error as { response?: { data?: { error?: string } } };

@@ -6,19 +6,15 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 bg-white shadow-sm z-50 transition-all duration-300">
         <div className="flex items-center justify-between px-8 py-4 max-w-6xl mx-auto">
-          {/* Logo */}
           <Link to="/" className="flex items-center gap-2 font-poppins font-semibold text-xl text-blue-900 no-underline">
             <i className="fas fa-graduation-cap text-2xl"></i>
             <span>My Dream Institution</span>
           </Link>
-
-          {/* Desktop Navigation */}
           <div className="hidden md:flex list-none gap-8">
             <a href="#about" className="text-slate-500 no-underline font-medium transition-colors duration-300 hover:text-blue-900">About</a>
-            <a href="#colleges" className="text-slate-500 no-underline font-medium transition-colors duration-300 hover:text-blue-900">Colleges</a>
+            <Link to="/more" className="text-slate-500 no-underline font-medium transition-colors duration-300 hover:text-blue-900">Colleges</Link>
             <a href="#nri" className="text-slate-500 no-underline font-medium transition-colors duration-300 hover:text-blue-900">NRI</a>
             <a href="#contact" className="text-slate-500 no-underline font-medium transition-colors duration-300 hover:text-blue-900">Contact</a>
           </div>
@@ -26,8 +22,6 @@ const Home = () => {
           <a href="#apply" className="hidden md:inline-block px-6 py-3 bg-blue-900 text-white no-underline rounded-md font-medium transition-all duration-300 hover:bg-blue-700 hover:-translate-y-0.5">
             Apply Now
           </a>
-
-          {/* Mobile Menu Button */}
           <button 
             className="md:hidden flex flex-col cursor-pointer"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
