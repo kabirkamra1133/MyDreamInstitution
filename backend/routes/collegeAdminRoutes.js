@@ -16,7 +16,7 @@ const router = express.Router();
 router.get('/', authenticate, listCollegeAdmins);
 
 // Create a college admin (only if not already created) — must be authenticated as college
-router.post('/', authenticate, uploadCollegeMedia, createCollegeAdmin);
+router.post('/profile', authenticate, uploadCollegeMedia, createCollegeAdmin);
 
 router.post('/upload', upload.single('file'), (req, res) => {
   try {
@@ -30,7 +30,7 @@ router.post('/upload', upload.single('file'), (req, res) => {
 });
 
 // Get, update, delete single college admin
-router.get('/me', authenticate, getMyCollegeAdmin);
+router.get('/profile', authenticate, getMyCollegeAdmin);
 router.get('/:id', getCollegeAdmin);
 router.put('/:id', authenticate, updateCollegeAdmin);
 router.delete('/:id', authenticate, authorize('admin'), deleteCollegeAdmin);

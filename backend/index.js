@@ -4,6 +4,7 @@ import userRoutes from './routes/userRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import collegeAdminRoutes from './routes/collegeAdminRoutes.js';
 import collegeRoutes from './routes/collegeRoutes.js';
+import shortlistRoutes from './routes/shortlistRoutes.js';
 import { configDotenv } from 'dotenv';
 import cors from 'cors';
 import path from 'path';
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users',userRoutes);
 app.use('/api/college-admins', collegeAdminRoutes);
 app.use('/api/colleges', collegeRoutes);
+app.use('/api/shortlists', shortlistRoutes);
 
 // Error handler (must be after routes)
 app.use((err, req, res, next) => {

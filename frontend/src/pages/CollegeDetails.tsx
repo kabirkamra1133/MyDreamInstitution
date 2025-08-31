@@ -21,6 +21,10 @@ const CollegeDetails: React.FC = () => {
   const [data, setData] = useState<CollegeAdminData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+  // Course selection state for Apply section
+  const [selectedParentCourse, setSelectedParentCourse] = useState<string>('');
+  const [selectedSubCourse, setSelectedSubCourse] = useState<string>('');
+  const [interestedCourses, setInterestedCourses] = useState<{ parent: string; name: string }[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -115,11 +119,158 @@ const CollegeDetails: React.FC = () => {
             </div>
 
             <div className="card-elevated p-6">
-              <h3 className="text-lg font-bold">Apply</h3>
-              <p className="text-muted-foreground mt-2">Start your application for this college.</p>
-              <div className="mt-4">
-                <Link to="/" className="btn-primary">Apply Now</Link>
-              </div>
+                      <h3 className="text-lg font-bold">Apply</h3>
+                      <p className="text-muted-foreground mt-2">Select courses you're interested in and start your application.</p>
+                      {/* Course selection UI */}
+                      <div className="mt-4 space-y-3">
+                        <label className="block text-sm font-medium">Choose Course</label>
+                        <select
+                          value={selectedParentCourse}
+                          onChange={(e) => {
+                            setSelectedParentCourse(e.target.value);
+                            setSelectedSubCourse('');
+                          }}
+                          className="w-full p-2 border rounded"
+                        >
+                          <option value="">-- Select Course --</option>
+                          {data?.courses?.map((c) => (
+                            <option key={c.name} value={c.name}>{c.name}</option>
+                          ))}
+                        </select>
+
+                        <label className="block text-sm font-medium">Choose Specialisation / Sub-course</label>
+                        <select
+                          value={selectedSubCourse}
+                          onChange={(e) => setSelectedSubCourse(e.target.value)}
+                          className="w-full p-2 border rounded"
+                          disabled={!selectedParentCourse}
+                        >
+                          <option value="">-- Select Sub-course --</option>
+                          {(data?.courses || []).find(c => c.name === selectedParentCourse)?.subCourses?.map((sc) => (
+                            <option key={sc.name} value={sc.name}>{sc.name} — ₹{sc.fee}</option>
+                          ))}
+                        </select>
+
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className="btn-outline"
+                            onClick={() => {
+                              if (!selectedParentCourse || !selectedSubCourse) return;
+                              // avoid duplicates
+                              const exists = interestedCourses.some(ic => ic.parent === selectedParentCourse && ic.name === selectedSubCourse);
+                              if (exists) return;
+                              setInterestedCourses(prev => [...prev, { parent: selectedParentCourse, name: selectedSubCourse }]);
+                            }}
+                            disabled={!selectedParentCourse || !selectedSubCourse}
+                          >
+                            Add to Interested Courses
+                          </button>
+                          <button
+                            type="button"
+                            className={`btn-primary ${(!selectedParentCourse && interestedCourses.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            onClick={() => {
+                              // If nothing has been added yet but current selection exists, add it first
+                              if (interestedCourses.length === 0) {
+                                if (selectedParentCourse && selectedSubCourse) {
+                                  const exists = interestedCourses.some(ic => ic.parent === selectedParentCourse && ic.name === selectedSubCourse);
+                                  if (!exists) {
+                                    // add synchronously to a local copy then proceed
+                                    const newList = [...interestedCourses, { parent: selectedParentCourse, name: selectedSubCourse }];
+                                    setInterestedCourses(newList);
+                                    // proceed: update the shortlist on the backend
+                                    (async () => {
+                                      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                                      try {
+                                        const res = await fetch('/api/shortlists', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                                          body: JSON.stringify({ collegeId: id, interestedCourses: newList })
+                                        });
+                                        if (!res.ok) {
+                                          const txt = await res.text();
+                                          throw new Error(txt || 'Failed to save interested courses');
+                                        }
+                                        // navigate to anchor (same behavior as old link)
+                                        window.location.hash = 'apply';
+                                      } catch (err) {
+                                        console.error('Failed to save interested courses', err);
+                                        alert(err instanceof Error ? err.message : 'Error');
+                                      }
+                                    })();
+                                  }
+                                } else {
+                                  alert('Please add at least one interested course before applying.');
+                                }
+                              } else {
+                                // We already have interested courses, proceed to save and navigate
+                                (async () => {
+                                  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                                  try {
+                                    const res = await fetch('/api/shortlists', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                                      body: JSON.stringify({ collegeId: id, interestedCourses })
+                                    });
+                                    if (!res.ok) {
+                                      const txt = await res.text();
+                                      throw new Error(txt || 'Failed to save interested courses');
+                                    }
+                                    window.location.hash = 'apply';
+                                  } catch (err) {
+                                    console.error('Failed to save interested courses', err);
+                                    alert(err instanceof Error ? err.message : 'Error');
+                                  }
+                                })();
+                              }
+                            }}
+                            disabled={!selectedParentCourse && interestedCourses.length === 0}
+                          >
+                            Apply Now
+                          </button>
+                        </div>
+
+                        {interestedCourses.length > 0 && (
+                          <div className="mt-3">
+                            <h4 className="text-sm font-medium mb-2">Interested Courses</h4>
+                            <ul className="space-y-2">
+                              {interestedCourses.map((ic, idx) => (
+                                <li key={`${ic.parent}-${ic.name}-${idx}`} className="flex items-center justify-between px-3 py-2 bg-card rounded">
+                                  <div className="text-sm">{ic.parent} — {ic.name}</div>
+                                  <div>
+                                    <button className="text-sm text-destructive" onClick={() => setInterestedCourses(prev => prev.filter((_, i) => i !== idx))}>Remove</button>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                className="btn-primary"
+                                onClick={async () => {
+                                  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                                  try {
+                                    const res = await fetch('/api/shortlists', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                                      body: JSON.stringify({ collegeId: id, interestedCourses })
+                                    });
+                                    if (!res.ok) {
+                                      const txt = await res.text();
+                                      throw new Error(txt || 'Failed to save interested courses');
+                                    }
+                                    alert('Interested courses saved to your shortlist.');
+                                  } catch (e) {
+                                    console.error('Failed to save interested courses', e);
+                                    alert(e instanceof Error ? e.message : 'Error');
+                                  }
+                                }}
+                              >
+                                Save Interested Courses
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
             </div>
           </aside>
         </div>

@@ -60,17 +60,17 @@ export const loginStudent = async (req, res) => {
 // College registration (optional) and login
 export const registerCollege = async (req, res) => {
   try {
-    const { instituteCode, email, password } = req.body;
-    console.log({instituteCode,email,password})
-    // if (!instituteCode || !email || !password) return res.status(400).json({ error: 'Please fill all required fieldsdsds' });
-    if (!instituteCode) console.log("Missing instituteCode");
-if (!email) console.log("Missing email");
-if (!password) console.log("Missing password");
+    const { instituteCode, email, password, name, contactNumber } = req.body;
+    console.log({ instituteCode, email, password, name, contactNumber });
+    // Validate required fields (name is required by the College model)
+    if (!instituteCode || !email || !password || !name) {
+      return res.status(400).json({ error: 'Please fill all required fields: instituteCode, name, email, password' });
+    }
 
     const exists = await College.findOne({ email });
     if (exists) return res.status(400).json({ error: 'College already exists' });
     const hashed = await bcrypt.hash(password, 10);
-    const college = new College({ instituteCode, email, password: hashed });
+    const college = new College({ instituteCode, name, email, password: hashed, contactNumber });
     await college.save();
     return res.status(201).json({ message: 'College registered' });
   } catch (err) {

@@ -34,7 +34,7 @@ function App() {
         } />
         <Route path='/more' element={<Index />} />
         <Route path ='/yo' element = {
-          <Protected allowedRoles={["college","collegeAdmin"]}>
+          <Protected allowedRoles={["college","collegeAdmin","admin"]}>
             <CollegeAdminPortal />
           </Protected>
         }/>

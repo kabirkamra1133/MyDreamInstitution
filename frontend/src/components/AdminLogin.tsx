@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -22,6 +23,7 @@ const AdminLogin = () => {
         localStorage.setItem('token', token);
         localStorage.setItem('role', 'admin');
       }
+      navigate("/some")
       console.log('Admin login success', res.data);
     } catch (error) {
       const err = error as { response?: { data?: { error?: string } } };

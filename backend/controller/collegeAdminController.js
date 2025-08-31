@@ -156,7 +156,7 @@ export const getMyCollegeAdmin = async (req, res) => {
     if (!user || user.role !== 'college') return res.status(403).json({ error: 'Only college accounts can view this profile' });
     const doc = await CollegeAdmin.findOne({ college: user.id }).select('-password').lean();
     if (!doc) return res.status(404).json({ error: 'Profile not found' });
-    return res.json({ data: doc });
+    return res.json(doc);
   } catch (err) {
     console.error('getMyCollegeAdmin error', err);
     return res.status(500).json({ error: 'Server error' });

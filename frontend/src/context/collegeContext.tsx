@@ -1,14 +1,29 @@
+
 import axios from "axios";
 import React, { createContext, useContext } from "react";
+interface College{
+    name?: string,
+    email : string,
+    password? : string,
+}
 interface contextType{
-    getAllColleges : ()=>Promise<unknown[]>
+    getAllColleges : ()=>Promise<Record<string, unknown>[]>
+    getRegisteredColleges : ()=>Promise<Record<string, unknown>[]>
     // uploadImage accepts a File and returns the uploaded image URL
     uploadImage : (file: File)=>Promise<string>
+    saveCollegeData: (data: { instituteCode?: string; name?: string; email: string; password: string; contactNumber?: string }) => Promise<Record<string, unknown>>
 }
 const CollegeContext = createContext<contextType|null>(null);
 const CollegeProvider : React.FC<{children : React.ReactNode}> = ({children})=>{
     const getAllColleges = async()=>{
-        return [];
+        try{
+            const res = await axios.get('/api/colleges');
+            // backend returns { data: [...] }
+            return Array.isArray(res?.data?.data) ? res.data.data : [];
+        }catch(err){
+            console.error('getAllColleges failed', err);
+            return [];
+        }
     }
     const MAX_UPLOAD_SIZE = 5 * 1024 * 1024; // match backend multer limit (5MB)
     const uploadImage = async(file: File) : Promise<string>=>{
@@ -58,10 +73,38 @@ const CollegeProvider : React.FC<{children : React.ReactNode}> = ({children})=>{
             throw new Error(typeof msg === 'string' ? msg : 'Upload failed');
         }
     }
-    
+    const saveCollegeData = async(data : { instituteCode?: string; name?: string; email: string; password: string; contactNumber?: string })=>{
+        try{
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+            const headers: Record<string,string> = {};
+            if(token) headers.Authorization = `Bearer ${token}`;
+            const res = await axios.post('/api/auth/college/register', data, { headers });
+            return res.data;
+        }catch(err){
+            console.error('saveCollegeData failed', err);
+            // rethrow so callers can show an error
+            throw err;
+        }
+    }
+    const getRegisteredColleges = async()=>{
+        try{
+            // Use the admin-facing colleges endpoint which merges college-admin declared
+            // courses with student-selected courses from shortlists.
+            const res = await axios.get('/api/colleges');
+            // backend returns { data: [...] }
+            return Array.isArray(res?.data?.data) ? res.data.data : [];
+        }
+        catch(err){
+            console.error('getRegisteredColleges failed', err);
+            return [];
+        }
+    }
+
     const value = {
         getAllColleges,
-        uploadImage
+        getRegisteredColleges,
+        uploadImage,
+        saveCollegeData
     }
     return <CollegeContext.Provider value={value}>
         {children}

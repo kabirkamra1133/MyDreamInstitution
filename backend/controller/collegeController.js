@@ -1,11 +1,28 @@
+import College from '../model/College.js';
 import CollegeAdmin from '../model/CollegeAdmin.js';
+import Shortlist from '../model/Shortlist.js';
 
-
-
+export const getRegisteredColleges = async (req, res) => {
+  try{
+    const colleges = await College.find().select('-password -__v').lean();
+    return res.json({data: colleges});
+  }
+  catch(err){
+    console.error('getRegisteredColleges error', err);
+    return res.status(500).json({error: 'Server error'});
+  }
+}
 export const getAllColleges = async (req, res) => {
   try {
     // fetch college admins and include the referenced College document when available
     const admins = await CollegeAdmin.find().populate('college').lean();
+
+    // Aggregate interested courses from shortlists so admin listing can show student-selected courses
+    const agg = await Shortlist.aggregate([
+      { $unwind: { path: '$interestedCourses', preserveNullAndEmptyArrays: true } },
+      { $group: { _id: '$college', courses: { $addToSet: '$interestedCourses.name' } } }
+    ]);
+    const shortlistMap = Object.fromEntries(agg.map(x => [String(x._id), Array.isArray(x.courses) ? x.courses.filter(Boolean) : []]));
 
     const data = admins.map(a => {
       // Prefer address from the admin profile if present, fallback to linked college address
@@ -40,7 +57,8 @@ export const getAllColleges = async (req, res) => {
         contactNumber: a.contactNumber || (a.profile && a.profile.contact && a.profile.contact.primaryPhone) || (a.college && a.college.contactNumber) || '',
         logo: a.logo && a.logo.url ? a.logo.url : (a.college && a.college.logo) ? a.college.logo : null,
         coverPhoto: a.coverPhoto && a.coverPhoto.url ? a.coverPhoto.url : null,
-        courses: Array.isArray(a.courses) ? a.courses.map(c => c.name) : [],
+  // Merge courses declared by the college admin with courses students selected in shortlists
+  courses: Array.from(new Set([...(Array.isArray(a.courses) ? a.courses.map(c => c.name) : []), ...(shortlistMap[a._id?.toString?.() || a._id] || [])])).filter(Boolean),
         createdAt: a.createdAt
       };
     });

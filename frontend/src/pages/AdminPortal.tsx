@@ -18,7 +18,9 @@ import {
   Shield,
   CheckCircle2,
   AlertCircle,
-  Loader2
+  Loader2,
+  ListOrdered,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,9 +29,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useCollege } from '@/context/collegeContext';
 
 // --- TYPE DEFINITIONS ---
 interface College {
+    instituteCode?: string;
+    password : string,
     name: string;
     courses: string[];
     address: string;
@@ -37,7 +42,11 @@ interface College {
     email: string;
     phone: string;
 }
-
+interface CollegeRegistrationData {
+    instituteCode : string,
+    email: string;
+    password: string
+}
 interface Student {
     id: string;
     name: string;
@@ -59,14 +68,9 @@ interface AdmittedStudent {
     counselor: string;
 }
 
-// --- MOCK DATA ---
-const initialCollegesData: College[] = [
-    { name: 'Global Tech Institute', courses: ['Computer Science', 'Data Science'], address: '123 Tech Park', state: 'California', email: 'contact@gti.edu', phone: '123-456-7890' },
-    { name: 'National Arts University', courses: ['Fine Arts', 'Graphic Design'], address: '456 Art Ave', state: 'New York', email: 'info@nau.edu', phone: '234-567-8901' },
-    { name: 'Evergreen Business School', courses: ['MBA', 'Finance'], address: '789 Commerce St', state: 'Texas', email: 'admissions@ebs.com', phone: '345-678-9012' },
-    { name: 'Oceanview Medical College', courses: ['Medicine', 'Nursing'], address: '101 Health Rd', state: 'Florida', email: 'help@omc.edu', phone: '456-789-0123' },
-    { name: 'Pioneer Engineering College', courses: ['Mechanical Engg', 'Civil Engg'], address: '212 Innovation Dr', state: 'California', email: 'r.kamra09@gmail.com', phone: '567-890-1234' },
-];
+// Define new types for shortlist stats
+interface ShortlistStat { collegeAdminId: string; name: string; email?: string; count: number; latest: string; }
+interface ShortlistedStudent { id: string; firstName: string; lastName: string; email: string; education: string; shortlistedAt: string; }
 
 const initialStudentsData: Student[] = [
     { id: 'STU001', name: 'Alice Johnson', mainCourse: 'Computer Science', subCourse: 'AI/ML', collegesSelected: ['Global Tech Institute', 'Pioneer Engineering College'], collegeFinalized: 'Global Tech Institute', coursesSelected: ['Computer Science', 'Data Science'], courseFinalized: 'Computer Science', counselor: 'John Doe' },
@@ -107,18 +111,7 @@ const EmailModal: FC<EmailModalProps> = ({ student, onClose }) => {
         setIsLoading(true);
         setError(null);
 
-        const prompt = `You are an experienced admissions counselor at 'Dream Institution'. Draft a professional email to a partner college.
-            *Details:*
-            - Student Name: ${student.name}
-            - Applying to College: ${student.collegeFinalized}
-            - Applying for Course: ${student.courseFinalized}
-            - Counselor: ${student.counselor}
-            *Instructions:*
-            1. Create a subject line: "Student Referral: [Student Name] for [Course Name]".
-            2. Write a concise (100-150 words), warm, and professional email introducing the student.
-            3. End with a clear call to action.
-            4. The email is from ${student.counselor}.
-            5. Return ONLY a JSON object: {"subject": "...", "body": "..."}`;
+    // (Prompt removed - previously unused variable causing lint warning)
 
         try {
             // Simulate API call
@@ -209,10 +202,111 @@ Dream Institution`);
     );
 };
 
+// --- STUDENT DETAILS MODAL ---
+interface StudentDetailsModalProps {
+    studentId: string | null;
+    initialName?: string;
+    onClose: () => void;
+}
+
+const StudentDetailsModal: FC<StudentDetailsModalProps> = ({ studentId, initialName, onClose }) => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [items, setItems] = useState<any[]>([]);
+    const [studentInfo, setStudentInfo] = useState<{ name?: string; email?: string; phone?: string } | null>(null);
+
+    useEffect(() => {
+        if (!studentId) return;
+        let mounted = true;
+        (async () => {
+            setLoading(true); setError(null);
+            try {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                const res = await fetch(`/api/shortlists?student=${encodeURIComponent(studentId)}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+                if (!res.ok) throw new Error('Failed to load student details');
+                const body = await res.json();
+                const data = Array.isArray(body.data) ? body.data : body.data && Array.isArray([body.data]) ? [body.data] : [];
+                if (!mounted) return;
+                setItems(data.map(d => ({ college: d.college?.name || d.college, interestedCourses: d.interestedCourses || [], notes: d.notes, createdAt: d.createdAt })));
+                // try to set basic student info from populated student field if present
+                if (data[0] && data[0].student) {
+                    setStudentInfo({ name: `${data[0].student.firstName || ''} ${data[0].student.lastName || ''}`.trim(), email: data[0].student.email });
+                } else {
+                    setStudentInfo({ name: initialName });
+                }
+            } catch (e) {
+                setError(e instanceof Error ? e.message : 'Error');
+            } finally { if (mounted) setLoading(false); }
+        })();
+        return () => { mounted = false; };
+    }, [studentId]);
+
+    if (!studentId) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-premium">
+                <CardHeader className="border-b">
+                    <div className="flex justify-between items-center">
+                        <CardTitle className="flex items-center gap-2">Student Details</CardTitle>
+                        <Button variant="ghost" size="icon" onClick={onClose}><X className="w-4 h-4"/></Button>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                    {loading ? <Spinner /> : error ? (
+                        <div className="text-center text-destructive">{error}</div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div>
+                                <div className="text-sm text-muted-foreground">Name</div>
+                                <div className="font-medium">{studentInfo?.name || initialName || 'Unknown'}</div>
+                            </div>
+                            <div>
+                                <div className="text-sm text-muted-foreground">Email</div>
+                                <div className="font-medium">{studentInfo?.email || 'N/A'}</div>
+                            </div>
+                            {items.length === 0 ? (
+                                <div className="text-sm text-muted-foreground">No shortlist entries found for this student.</div>
+                            ) : (
+                                <div>
+                                    <div className="text-sm text-muted-foreground mb-2">Shortlist Entries</div>
+                                    <ul className="space-y-3">
+                                        {items.map((it, idx) => (
+                                            <li key={idx} className="p-3 bg-card rounded">
+                                                <div className="text-sm font-medium">{it.college}</div>
+                                                <div className="text-xs text-muted-foreground">Added: {new Date(it.createdAt).toLocaleString()}</div>
+                                                {Array.isArray(it.interestedCourses) && it.interestedCourses.length > 0 && (
+                                                    <div className="mt-2 text-sm">
+                                                        <div className="text-xs text-muted-foreground">Interested Courses:</div>
+                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                            {it.interestedCourses.map((c: any, i: number) => (
+                                                                <Badge key={`${i}-${c.name}`} variant="secondary" className="text-xs">{c.parent} — {c.name}</Badge>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {it.notes && (<div className="mt-2 text-sm text-muted-foreground">Notes: {it.notes}</div>)}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    );
+};
+
 // --- TAB COMPONENTS ---
-const CollegesTab: FC = () => {
-    const [colleges, setColleges] = useState<College[]>(initialCollegesData);
+const CollegesTab: FC<{ onListChange?: (count: number) => void }> = ({ onListChange }) => {
+    const {saveCollegeData,getRegisteredColleges} = useCollege();
+    const [colleges, setColleges] = useState<College[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [newCollege, setNewCollege] = useState({
+        instituteCode: '',
         name: '',
         email: '',
         phone: '',
@@ -222,19 +316,41 @@ const CollegesTab: FC = () => {
         courses: [] as string[]
     });
 
-    const handleAddCollege = (e: React.FormEvent) => {
+    const handleAddCollege = async(e: React.FormEvent) => {
         e.preventDefault();
         if (newCollege.name && newCollege.email && newCollege.phone) {
-            const college: College = {
-                name: newCollege.name,
-                email: newCollege.email,
-                phone: newCollege.phone,
-                address: newCollege.address || 'Address not provided',
-                state: newCollege.state || 'State not provided',
-                courses: newCollege.courses.length > 0 ? newCollege.courses : ['General Course']
-            };
-            setColleges([...colleges, college]);
+            const instituteCode = newCollege.instituteCode && newCollege.instituteCode.trim()
+                ? newCollege.instituteCode.trim()
+                : `COL${String(colleges.length + 1).padStart(3, '0')}`;
+            try{
+                setError(null);
+                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                if (!token) {
+                    setError('Not authenticated. Please login as admin before creating college credentials.');
+                    return;
+                }
+                    await saveCollegeData({ instituteCode, name: newCollege.name, email: newCollege.email, password: newCollege.password, contactNumber: newCollege.phone });
+                // refetch list from backend to avoid stale/mock data
+                const list = await getRegisteredColleges();
+                setColleges(list as College[]);
+                onListChange?.((list as College[]).length ?? 0);
+            }catch(err){
+                console.error('Failed to save college', err);
+                // surface backend message if available
+                let msg = 'Failed to save college. Check console for details.';
+                if (err && typeof err === 'object' && 'response' in err) {
+                    const maybeResp = (err as unknown) as { response?: { data?: unknown } };
+                    const resp = maybeResp.response;
+                    if (resp && resp.data && typeof resp.data === 'object' && 'error' in (resp.data as object)) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        msg = String((resp.data as any).error);
+                    }
+                }
+                setError(msg);
+                return;
+            }
             setNewCollege({
+                instituteCode: '',
                 name: '',
                 email: '',
                 phone: '',
@@ -248,6 +364,32 @@ const CollegesTab: FC = () => {
             alert('Please fill in required fields: Name, Email, and Phone');
         }
     };
+
+    // fetch colleges (callable) and refresh on window focus
+    const fetchColleges = useCallback(async () => {
+        let mounted = true;
+        setLoading(true); setError(null);
+        try{
+            const list = await getRegisteredColleges();
+            if(mounted) {
+                setColleges(list as College[]);
+                onListChange?.((list as College[]).length ?? 0);
+            }
+        }catch(err){
+            console.error('Error loading colleges', err);
+            if(mounted) setError('Failed to load colleges');
+        }finally{ if(mounted) setLoading(false); }
+        return () => { mounted = false; };
+    }, [getRegisteredColleges, onListChange]);
+
+    useEffect(() => { fetchColleges(); }, [fetchColleges]);
+
+    // Refresh when window/tab regains focus so admin sees recent student changes
+    useEffect(() => {
+        const onFocus = () => { fetchColleges(); };
+        window.addEventListener('focus', onFocus);
+        return () => window.removeEventListener('focus', onFocus);
+    }, [fetchColleges]);
 
     const handleEditCollege = (index: number) => {
         const college = colleges[index];
@@ -279,6 +421,12 @@ const CollegesTab: FC = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                     <form onSubmit={handleAddCollege} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <Input
+                            placeholder="Institute Code (optional)"
+                            className="h-11"
+                            value={newCollege.instituteCode}
+                            onChange={(e) => setNewCollege({...newCollege, instituteCode: e.target.value})}
+                        />
                         <Input 
                             placeholder="College Name *" 
                             className="h-11" 
@@ -318,17 +466,24 @@ const CollegesTab: FC = () => {
 
             <Card className="shadow-card">
                 <CardHeader className="border-b">
-                    <CardTitle className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-lg">
                             <School className="w-6 h-6 text-primary" />
                         </div>
-                        College Listings
-                        <Badge variant="secondary" className="ml-auto">
-                            {colleges.length} Colleges
-                        </Badge>
-                    </CardTitle>
+                        <CardTitle className="flex items-center gap-3">College Listings</CardTitle>
+                        <Badge variant="secondary" className="ml-auto">{colleges.length} Colleges</Badge>
+                        <Button variant="ghost" size="sm" className="ml-3" onClick={fetchColleges} title="Refresh colleges">
+                            <RefreshCw className="w-4 h-4" />
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent className="p-0">
+                    {loading ? (
+                        <div className="p-6"><Spinner /></div>
+                    ) : error ? (
+                        <div className="p-6 text-center text-destructive">{error}</div>
+                    ) : (
+                        <>
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-muted/50">
@@ -340,19 +495,24 @@ const CollegesTab: FC = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {colleges.map((college, index) => (
-                                <TableRow key={`${college.name}-${index}`} className="hover:bg-muted/25 transition-colors">
+                            {colleges.map((college, index) => {
+                                if (!college) return null;
+                                const keyId = college.name ?? college.instituteCode ?? `col-${index}`;
+                                const maybeCollegeObj = college as unknown as Record<string, unknown>;
+                                const courses = Array.isArray(maybeCollegeObj.courses) ? (maybeCollegeObj.courses as string[]) : [];
+                                return (
+                                <TableRow key={`${keyId}-${index}`} className="hover:bg-muted/25 transition-colors">
                                     <TableCell>
                                         <div>
-                                            <div className="font-semibold text-foreground">{college.name}</div>
+                                            <div className="font-semibold text-foreground">{college.name ?? 'Unnamed College'}</div>
                                             <Badge variant="outline" className="mt-1 text-xs">
-                                                ID: COL{String(index + 1).padStart(3, '0')}
+                                                ID: {college.instituteCode ?? `COL${String(index + 1).padStart(3, '0')}`}
                                             </Badge>
                                         </div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-wrap gap-1">
-                                            {college.courses.map(course => (
+                                            {courses.map(course => (
                                                 <Badge key={course} variant="secondary" className="text-xs">
                                                     {course}
                                                 </Badge>
@@ -363,8 +523,8 @@ const CollegesTab: FC = () => {
                                         <div className="flex items-start gap-2">
                                             <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                                             <div className="text-sm">
-                                                <div>{college.address}</div>
-                                                <div className="text-muted-foreground">{college.state}</div>
+                                                <div>{typeof maybeCollegeObj.address === 'string' ? maybeCollegeObj.address : ''}</div>
+                                                <div className="text-muted-foreground">{typeof maybeCollegeObj.state === 'string' ? maybeCollegeObj.state : ''}</div>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -372,11 +532,11 @@ const CollegesTab: FC = () => {
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2 text-sm">
                                                 <Mail className="w-3 h-3 text-muted-foreground" />
-                                                {college.email}
+                                                {typeof maybeCollegeObj.email === 'string' ? maybeCollegeObj.email : ''}
                                             </div>
                                             <div className="flex items-center gap-2 text-sm">
                                                 <Phone className="w-3 h-3 text-muted-foreground" />
-                                                {college.phone}
+                                                {typeof maybeCollegeObj.phone === 'string' ? maybeCollegeObj.phone : ''}
                                             </div>
                                         </div>
                                     </TableCell>
@@ -401,9 +561,12 @@ const CollegesTab: FC = () => {
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                                );
+                            })}
                         </TableBody>
                     </Table>
+                        </>
+                    )}
                 </CardContent>
             </Card>
         </div>
@@ -411,7 +574,63 @@ const CollegesTab: FC = () => {
 };
 
 const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onForwardProfile }) => {
-    const [students, setStudents] = useState<Student[]>(initialStudentsData);
+    const [students, setStudents] = useState<Student[]>([]);
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+    const [selectedStudentName, setSelectedStudentName] = useState<string | undefined>(undefined);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+    useEffect(() => {
+        let mounted = true;
+        const load = async () => {
+            setLoading(true); setError(null);
+            try {
+                // Fetch aggregated shortlist stats to discover colleges
+                const res = await fetch('/api/shortlists/stats/aggregate', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+                if (!res.ok) throw new Error('Failed to load shortlist stats');
+                const body = await res.json();
+                const stats = Array.isArray(body.data) ? body.data : [];
+
+                const studentMap = new Map<string, Student>();
+                for (const stat of stats) {
+                    try {
+                        const r2 = await fetch(`/api/shortlists/college/${stat.collegeAdminId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+                        if (!r2.ok) continue;
+                        const b2 = await r2.json();
+                        const list = Array.isArray(b2.students) ? b2.students : [];
+                        for (const s of list) {
+                            const id = s.id ?? s._id ?? `${Math.random()}`;
+                            const existing = studentMap.get(String(id));
+                            if (!existing) {
+                                studentMap.set(String(id), {
+                                    id: String(id),
+                                    name: `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim() || 'Unnamed',
+                                    mainCourse: '',
+                                    subCourse: '',
+                                    collegesSelected: [stat.name ?? 'Unknown'],
+                                    collegeFinalized: '',
+                                    coursesSelected: [],
+                                    courseFinalized: '',
+                                    counselor: ''
+                                });
+                            } else {
+                                existing.collegesSelected = Array.from(new Set([...existing.collegesSelected, stat.name ?? 'Unknown']));
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch students for college', stat, e);
+                        continue;
+                    }
+                }
+                if (mounted) setStudents(Array.from(studentMap.values()));
+            } catch (e) {
+                setError(e instanceof Error ? e.message : 'Error loading student leads');
+            } finally { if (mounted) setLoading(false); }
+        };
+        load();
+        return () => { mounted = false; };
+    }, [token]);
 
     const handleFinalize = (studentId: string, field: 'college' | 'course', value: string) => {
         setStudents(prev => prev.map(s => {
@@ -421,7 +640,7 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
             return s;
         }));
     };
-    
+
     return (
         <Card className="shadow-card">
             <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10">
@@ -436,6 +655,7 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
+                {loading ? <div className="p-6"><Spinner /></div> : error ? <div className="p-6 text-center text-destructive">{error}</div> : (
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/50">
@@ -456,13 +676,13 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
                                             <User className="w-4 h-4 text-primary" />
                                         </div>
                                         <div>
-                                            <div className="font-semibold text-foreground">{student.name}</div>
+                                            <button className="font-semibold text-foreground text-left" onClick={() => { setSelectedStudentId(student.id); setSelectedStudentName(student.name); }}>
+                                                {student.name}
+                                            </button>
                                             <div className="text-sm text-muted-foreground">
                                                 {student.mainCourse} • {student.counselor}
                                             </div>
-                                            <Badge variant="outline" className="text-xs mt-1">
-                                                {student.id}
-                                            </Badge>
+                                            <Badge variant="outline" className="text-xs mt-1">{student.id}</Badge>
                                         </div>
                                     </div>
                                 </TableCell>
@@ -521,20 +741,29 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
                                     )}
                                 </TableCell>
                                 <TableCell className="text-center">
-                                    <Button 
-                                        onClick={() => onForwardProfile(student)} 
-                                        size="sm"
-                                        className="bg-gradient-primary"
-                                        disabled={!student.collegeFinalized || !student.courseFinalized}
-                                    >
-                                        <Send className="w-4 h-4 mr-2" />
-                                        Forward
-                                    </Button>
+                                    <div className="flex justify-center gap-2">
+                                        <Button size="sm" variant="outline" onClick={() => { setSelectedStudentId(student.id); setSelectedStudentName(student.name); }}>
+                                            Info
+                                        </Button>
+                                        <Button 
+                                            onClick={() => onForwardProfile(student)} 
+                                            size="sm"
+                                            className="bg-gradient-primary"
+                                            disabled={!student.collegeFinalized || !student.courseFinalized}
+                                        >
+                                            <Send className="w-4 h-4 mr-2" />
+                                            Forward
+                                        </Button>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
+                )}
+            {selectedStudentId && (
+                <StudentDetailsModal studentId={selectedStudentId} initialName={selectedStudentName} onClose={() => { setSelectedStudentId(null); setSelectedStudentName(undefined); }} />
+            )}
             </CardContent>
         </Card>
     );
@@ -618,13 +847,173 @@ const AdmittedTab: FC = () => {
     );
 };
 
+const ShortlistsTab: FC = () => {
+    const [stats, setStats] = useState<ShortlistStat[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedCollege, setSelectedCollege] = useState<ShortlistStat | null>(null);
+    const [students, setStudents] = useState<ShortlistedStudent[]>([]);
+    const [studentsLoading, setStudentsLoading] = useState(false);
+    const [mode, setMode] = useState<'aggregate' | 'single'>('aggregate');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+        const fetchOwnCollege = React.useCallback(async () => {
+            setMode('single');
+            setStudentsLoading(true); setError(null);
+            try {
+                const res = await fetch('/api/shortlists/college', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+                if (res.status === 401) throw new Error('Unauthorized');
+                if (res.status === 403) throw new Error('Forbidden');
+                if (!res.ok) throw new Error('Failed to load your college shortlist');
+                const body = await res.json();
+                const college = body.college ? { collegeAdminId: body.college._id, name: body.college.name, email: body.college.email, count: body.count || 0, latest: body.students?.[0]?.shortlistedAt || new Date().toISOString() } : null;
+                if (college) setSelectedCollege(college);
+                setStudents(Array.isArray(body.students) ? body.students : []);
+            } catch (e) {
+                setError(e instanceof Error ? e.message : 'Error');
+            } finally { setStudentsLoading(false); }
+        }, [token]);
+
+        const fetchStats = React.useCallback(async () => {
+            setMode('aggregate');
+            setLoading(true); setError(null);
+            try {
+                const res = await fetch('/api/shortlists/stats/aggregate', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+                if (res.status === 401 || res.status === 403) {
+                    // Not admin; fallback to single college view
+                    setLoading(false);
+                    await fetchOwnCollege();
+                    return;
+                }
+                if (!res.ok) throw new Error('Failed to load stats');
+                const body = await res.json();
+                setStats(Array.isArray(body.data) ? body.data : []);
+            } catch (e) {
+                setError(e instanceof Error ? e.message : 'Error');
+            } finally { setLoading(false); }
+        }, [token, fetchOwnCollege]);
+
+  const fetchStudents = async (stat: ShortlistStat) => {
+    setSelectedCollege(stat);
+    setStudentsLoading(true); setError(null); setStudents([]);
+    try {
+      const res = await fetch(`/api/shortlists/college/${stat.collegeAdminId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (res.status === 401) throw new Error('Unauthorized');
+      if (!res.ok) throw new Error('Failed to load students');
+      const body = await res.json();
+      setStudents(Array.isArray(body.students) ? body.students : []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error');
+    } finally { setStudentsLoading(false); }
+  };
+
+    useEffect(() => { fetchStats(); }, [fetchStats]);
+
+  return (
+    <div className="space-y-6">
+            {mode === 'aggregate' && (
+                <Card className="shadow-card">
+                    <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10">
+                        <CardTitle className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg"><ListOrdered className="w-6 h-6 text-primary" /></div>
+                            Shortlist Overview
+                            <Button variant="ghost" size="sm" className="ml-auto" onClick={fetchStats} disabled={loading}>
+                                <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                            </Button>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {loading ? <Spinner /> : error ? (
+                            <div className="p-6 text-center text-destructive">{error}</div>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/50">
+                                        <TableHead className="font-semibold">College</TableHead>
+                                        <TableHead className="font-semibold">Shortlists</TableHead>
+                                        <TableHead className="font-semibold">Latest</TableHead>
+                                        <TableHead className="text-right font-semibold">Action</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {stats.map(stat => (
+                                        <TableRow key={stat.collegeAdminId} className="hover:bg-muted/25 transition-colors">
+                                            <TableCell>
+                                                <div className="font-semibold">{stat.name}</div>
+                                                <div className="text-xs text-muted-foreground">{stat.email}</div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary" className="text-xs">{stat.count}</Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="text-sm">{new Date(stat.latest).toLocaleString()}</span>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button size="sm" variant="outline" onClick={() => fetchStudents(stat)}>View Students</Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    {!stats.length && (
+                                        <TableRow><TableCell colSpan={4} className="text-center py-6 text-sm text-muted-foreground">No shortlist data yet.</TableCell></TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
+
+    {selectedCollege && (
+        <Card className="shadow-card">
+          <CardHeader className="border-b">
+            <CardTitle className="flex items-center gap-3">
+          {mode === 'aggregate' ? 'Students who shortlisted ' + selectedCollege.name : 'Students who shortlisted your college'}
+              <Badge variant="outline" className="ml-auto">{students.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {studentsLoading ? <Spinner /> : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="font-semibold">Student</TableHead>
+                    <TableHead className="font-semibold">Education</TableHead>
+                    <TableHead className="font-semibold">Email</TableHead>
+                    <TableHead className="font-semibold">Shortlisted At</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {students.map(stu => (
+                    <TableRow key={stu.id}>
+                      <TableCell>
+                        <div className="font-semibold">{stu.firstName} {stu.lastName}</div>
+                      </TableCell>
+                      <TableCell>{stu.education}</TableCell>
+                      <TableCell>{stu.email}</TableCell>
+                      <TableCell>{new Date(stu.shortlistedAt).toLocaleString()}</TableCell>
+                    </TableRow>
+                  ))}
+                  {!students.length && (
+                    <TableRow><TableCell colSpan={4} className="text-center py-6 text-sm text-muted-foreground">No students yet.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
 // --- MAIN APP COMPONENT ---
-type Tab = 'colleges' | 'students' | 'admitted';
+type Tab = 'colleges' | 'students' | 'admitted' | 'shortlists';
 
 const AdminPortal: FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('colleges');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+    const [collegeCount, setCollegeCount] = useState<number>(0);
 
     const handleForwardProfile = (student: Student) => {
         if (!student.collegeFinalized || !student.courseFinalized) {
@@ -662,7 +1051,7 @@ const AdminPortal: FC = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm text-muted-foreground">Total Colleges</p>
-                                    <p className="text-3xl font-bold text-primary">{initialCollegesData.length}</p>
+                                    <p className="text-3xl font-bold text-primary">{collegeCount}</p>
                                 </div>
                                 <div className="p-3 bg-primary/10 rounded-lg">
                                     <Building2 className="w-6 h-6 text-primary" />
@@ -713,16 +1102,23 @@ const AdminPortal: FC = () => {
                             <GraduationCap className="w-4 h-4" />
                             Admitted
                         </TabsTrigger>
+                        <TabsTrigger value="shortlists" className="flex items-center gap-2">
+                            <ListOrdered className="w-4 h-4" />
+                            Shortlists
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="colleges">
-                        <CollegesTab />
+                        <CollegesTab onListChange={setCollegeCount} />
                     </TabsContent>
                     <TabsContent value="students">
                         <StudentsTab onForwardProfile={handleForwardProfile} />
                     </TabsContent>
                     <TabsContent value="admitted">
                         <AdmittedTab />
+                    </TabsContent>
+                    <TabsContent value="shortlists">
+                        <ShortlistsTab />
                     </TabsContent>
                 </Tabs>
             </div>

@@ -34,7 +34,6 @@ const courseSchema = new mongoose.Schema({
 }, { _id: false });
 
 const collegeAdminSchema = new mongoose.Schema({
-  // Each College can have only one CollegeAdmin profile (enforced in controller and via unique index)
   college: { type: mongoose.Schema.Types.ObjectId, ref: 'College', required: true, unique: true },
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -65,11 +64,3 @@ const collegeAdminSchema = new mongoose.Schema({
 });
 
 export default mongoose.model('CollegeAdmin', collegeAdminSchema);
-
-// Ensure index is created (unique one-to-one between College and CollegeAdmin)
-try {
-  collegeAdminSchema.index({ college: 1 }, { unique: true });
-} catch (e) {
-  // eslint-disable-next-line no-console
-  console.warn('Index creation warning (college unique):', e);
-}

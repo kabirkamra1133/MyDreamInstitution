@@ -1,18 +1,6 @@
 import React, { useState, useEffect, FC } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// --- TYPE DEFINITIONS ---
-// Defines the structure for an educational qualification record.
-interface IQualification {
-  id: number;
-  degree: string;
-  board: string;
-  subjects: string;
-  year: string;
-  grade: string;
-  doc: string;
-}
-
 // Defines the structure for a college record.
 interface ICollege {
     id: string; // CollegeAdmin id
@@ -170,211 +158,8 @@ const Header: FC = () => (
 );
 
 
-// Tabs Component with improved styling
-interface TabsProps {
-    activeTab: string;
-    setActiveTab: (tab: 'profile' | 'search') => void;
-}
-const Tabs: FC<TabsProps> = ({ activeTab, setActiveTab }) => (
-    <nav className="bg-card rounded-xl shadow-md mb-8">
-        <div className="border-b border-border">
-            <div className="flex -mb-px">
-                <button
-                    className={`w-1/2 py-4 px-1 text-center border-b-2 font-semibold text-sm sm:text-base focus:outline-none transition-all ${
-                        activeTab === 'profile' ? 'tab-active' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                    }`}
-                    onClick={() => setActiveTab('profile')}
-                >
-                    👤 Student Profile
-                </button>
-                <button
-                    className={`w-1/2 py-4 px-1 text-center border-b-2 font-semibold text-sm sm:text-base focus:outline-none transition-all ${
-                        activeTab === 'search' ? 'tab-active' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                    }`}
-                    onClick={() => setActiveTab('search')}
-                >
-                    🎓 College Search
-                </button>
-            </div>
-        </div>
-    </nav>
-);
-
-// PersonalDetails Component with improved styling
-const PersonalDetails: FC = () => {
-    const uploadFile = (id: string) => {
-        const statusDiv = document.getElementById(id);
-        if (statusDiv) {
-            statusDiv.innerHTML = `
-                <div class="flex items-center justify-between mt-1 w-full px-3 py-2 text-sm text-left text-success bg-success/10 rounded-lg border border-success/20">
-                    <span>document.pdf</span>
-                    <span class="text-success font-semibold ml-2">✅ Verified</span>
-                </div>
-            `;
-        }
-    };
-
-    return (
-        <div className="card-elevated p-6 sm:p-8">
-            <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
-                <span className="bg-primary/10 p-2 rounded-lg">👤</span>
-                Personal Details
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-                {/* Photo Upload */}
-                <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-foreground mb-3">Profile Photo</label>
-                    <div className="flex items-center space-x-6">
-                        <img 
-                            className="h-24 w-24 rounded-full object-cover shadow-lg ring-4 ring-primary/20" 
-                            src="https://placehold.co/128x128/E2E8F0/4A5568?text=JD" 
-                            alt="Current profile photo" 
-                        />
-                        <button type="button" className="btn-secondary">
-                            {Icons.upload} Upload Photo
-                        </button>
-                    </div>
-                </div>
-                
-                {/* Form Fields */}
-                <div>
-                    <label htmlFor="name" className="block text-sm font-semibold text-foreground mb-2">Full Name</label>
-                    <input type="text" id="name" className="form-input" placeholder="Jane Doe" />
-                </div>
-                <div>
-                    <label htmlFor="phone" className="block text-sm font-semibold text-foreground mb-2">Phone Number</label>
-                    <input type="tel" id="phone" className="form-input" placeholder="+91 12345 67890" />
-                </div>
-                <div>
-                    <label htmlFor="email" className="block text-sm font-semibold text-foreground mb-2">Email Address</label>
-                    <input type="email" id="email" className="form-input" placeholder="jane.doe@example.com" />
-                </div>
-                <div>
-                    <label htmlFor="father_name" className="block text-sm font-semibold text-foreground mb-2">Father's Name</label>
-                    <input type="text" id="father_name" className="form-input" placeholder="John Doe" />
-                </div>
-                <div className="md:col-span-2">
-                    <label htmlFor="address" className="block text-sm font-semibold text-foreground mb-2">Complete Address</label>
-                    <textarea id="address" rows={3} className="form-input" placeholder="123 Main Street, Anytown, State, PIN Code"></textarea>
-                </div>
-                <div>
-                    <label htmlFor="aadhar" className="block text-sm font-semibold text-foreground mb-2">Aadhar Number</label>
-                    <input type="text" id="aadhar" className="form-input" placeholder="1234 5678 9012" />
-                </div>
-                <div className="flex items-end">
-                    <div id="aadhar-upload-status" className="w-full">
-                        <label className="block text-sm font-semibold text-foreground mb-2 invisible">Upload</label>
-                        <button onClick={() => uploadFile('aadhar-upload-status')} className="btn-outline w-full">
-                            {Icons.upload} Upload Aadhar
-                        </button>
-                    </div>
-                </div>
-                <div>
-                    <label htmlFor="dob" className="block text-sm font-semibold text-foreground mb-2">Date of Birth</label>
-                    <input type="date" id="dob" className="form-input" />
-                </div>
-                <div className="flex items-end">
-                    <div id="dob-upload-status" className="w-full">
-                        <label className="block text-sm font-semibold text-foreground mb-2 invisible">Upload</label>
-                        <button onClick={() => uploadFile('dob-upload-status')} className="btn-outline w-full">
-                            {Icons.upload} Upload DOB Proof
-                        </button>
-                    </div>
-                </div>
-                <div>
-                    <label htmlFor="category" className="block text-sm font-semibold text-foreground mb-2">Category</label>
-                    <select id="category" className="form-input">
-                        <option>General</option>
-                        <option>OBC</option>
-                        <option>SC</option>
-                        <option>ST</option>
-                        <option>EWS</option>
-                    </select>
-                </div>
-                <div className="flex items-end">
-                    <div id="category-upload-status" className="w-full">
-                        <label className="block text-sm font-semibold text-foreground mb-2 invisible">Upload</label>
-                        <button onClick={() => uploadFile('category-upload-status')} className="btn-outline w-full">
-                            {Icons.upload} Upload Category Proof
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div className="mt-8 text-right">
-                <button className="btn-primary">
-                    {Icons.save} Save Personal Details
-                </button>
-            </div>
-        </div>
-    );
-};
 
 // EducationalQualifications Component
-interface EducationalQualificationsProps {
-    onSuggestCareers: () => void;
-}
-const EducationalQualifications: FC<EducationalQualificationsProps> = ({ onSuggestCareers }) => {
-    return (
-        <div className="card-elevated p-6 sm:p-8">
-            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-                <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                    <span className="bg-primary/10 p-2 rounded-lg">🎓</span>
-                    Educational Qualifications
-                </h2>
-                <div className="flex items-center gap-4">
-                    <button onClick={onSuggestCareers} className="btn-accent text-sm">
-                        ✨ Suggest Career Paths
-                    </button>
-                    <button className="btn-secondary text-sm">
-                        + Add Qualification
-                    </button>
-                </div>
-            </div>
-            <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-border">
-                    <thead className="bg-muted">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Degree/Certificate</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Board/University</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Subjects</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Year</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Grade</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-card divide-y divide-border">
-                        <tr>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">B.Sc. Computer Science</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">University of Mumbai</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">CS, Math, Physics</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">2023</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">8.5 CGPA</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                <div className="flex items-center space-x-2">
-                                    <button className="text-primary hover:text-primary-dark">{Icons.edit}</button>
-                                    <button className="text-destructive hover:text-destructive/80">{Icons.delete}</button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">12th (HSC)</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">Maharashtra State Board</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">Physics, Chemistry, Math</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">2020</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">88.5%</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                <div className="flex items-center space-x-2">
-                                    <button className="text-primary hover:text-primary-dark">{Icons.edit}</button>
-                                    <button className="text-destructive hover:text-destructive/80">{Icons.delete}</button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-};
 
 // CollegeSearchFilters Component
 const CollegeSearchFilters: FC = () => (
@@ -568,24 +353,16 @@ const GeminiModal: FC<GeminiModalProps> = ({ isOpen, title, content, isLoading, 
 // --- MAIN APP COMPONENT ---
 const CollegeAdmissionApp: FC = () => {
     const navigate = useNavigate();
-    // State Management
-    const [activeTab, setActiveTab] = useState<'profile' | 'search'>('profile');
-    const [qualifications, setQualifications] = useState<IQualification[]>([]);
     const [colleges, setColleges] = useState<ICollege[]>([]);
-    const [shortlisted, setShortlisted] = useState<string[]>([]);
+    const [shortlisted, setShortlisted] = useState<string[]>([]); // college ids
+    const [shortlistLoading, setShortlistLoading] = useState(false);
+    const [shortlistError, setShortlistError] = useState<string|undefined>();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
     const [modalContent, setModalContent] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Initial data loading
     useEffect(() => {
-        setQualifications([
-            { id: 1, degree: 'B.Sc. Computer Science', board: 'University of Mumbai', subjects: 'CS, Math, Physics', year: '2023', grade: '8.5 CGPA', doc: 'BSc_Marksheet.pdf' },
-            { id: 2, degree: '12th (HSC)', board: 'Maharashtra State Board', subjects: 'Physics, Chemistry, Math', year: '2020', grade: '88.5%', doc: 'HSC_Marksheet.pdf' },
-        ]);
-
-        // fetch colleges from backend
         (async () => {
             try {
                 const res = await fetch('/api/colleges');
@@ -598,82 +375,132 @@ const CollegeAdmissionApp: FC = () => {
         })();
     }, []);
 
-    const handleSuggestCareers = async () => {
-        setIsModalOpen(true);
-        setIsLoading(true);
-        setModalTitle('Career Path Suggestions');
-        const qualificationsText = qualifications.map(q => `${q.degree} with subjects in ${q.subjects}`).join(', ');
-        const prompt = `Based on these qualifications: ${qualificationsText}, suggest 5 potential career paths with a one-sentence description for each. Format as a simple list.`;
-        const response = await callGeminiAPI(prompt);
-        setModalContent(response.replace(/\n/g, '<br>'));
-        setIsLoading(false);
-    };
+    // Fetch shortlisted colleges from backend
+    useEffect(() => {
+        const loadShortlist = async () => {
+            setShortlistLoading(true);
+            setShortlistError(undefined);
+            try {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                const res = await fetch('/api/shortlists', {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                });
+                if (res.status === 401) throw new Error('Not authenticated');
+                if (!res.ok) throw new Error('Failed to load shortlist');
+                const body = await res.json();
+                interface ShortlistItem { college: string | { _id?: string; id?: string } }
+                const raw: ShortlistItem[] = Array.isArray(body.data) ? body.data : [];
+                const ids = raw.map(item => {
+                    if (item && typeof item.college === 'object') return item.college._id || item.college.id || '';
+                    return item.college as string;
+                }).filter(id => typeof id === 'string' && id.length > 0);
+                setShortlisted(ids);
+            } catch (e) {
+                console.error('loadShortlist error', e);
+                setShortlistError(e instanceof Error ? e.message : 'Error loading shortlist');
+            } finally {
+                setShortlistLoading(false);
+            }
+        };
+        loadShortlist();
+    }, []);
 
     const handleCompareColleges = async () => {
         setIsModalOpen(true);
         setIsLoading(true);
         setModalTitle('AI College Comparison');
-    const collegeNames = colleges.filter(c => shortlisted.includes(c.id)).map(c => c.name).join(' and ');
+        const collegeNames = colleges.filter(c => shortlisted.includes(c.id)).map(c => c.name).join(' and ');
+        if (!collegeNames) {
+            setModalContent('Please shortlist at least two colleges for comparison.');
+            setIsLoading(false);
+            return;
+        }
         const prompt = `Provide a detailed comparison between ${collegeNames}. Compare them on: **Key Programs**, **Campus Life**, **Placement Statistics**, and **Notable Alumni**. Use bullet points.`;
         const response = await callGeminiAPI(prompt);
         setModalContent(response.replace(/\n/g, '<br>'));
         setIsLoading(false);
     };
-    
+
     const handleShortlistToggle = (id: string) => {
         setShortlisted(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+        (async () => {
+            try {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                const res = await fetch('/api/shortlists/toggle', {
+                    method: 'POST',
+                    headers: token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ collegeId: id })
+                });
+                if (res.status === 401) throw new Error('Unauthorized');
+                if (!res.ok) throw new Error('Toggle failed');
+                const body = await res.json();
+                if (typeof body.shortlisted === 'boolean') {
+                    setShortlisted(prev => body.shortlisted ? (prev.includes(id) ? prev : [...prev, id]) : prev.filter(i => i !== id));
+                }
+            } catch (e) {
+                console.error('toggle shortlist error', e);
+                setShortlisted(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+            }
+        })();
     };
 
     const handleRemoveShortlisted = (id: string) => {
         setShortlisted(prev => prev.filter(i => i !== id));
+        (async () => {
+            try {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                const res = await fetch(`/api/shortlists/${id}`, {
+                    method: 'DELETE',
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                });
+                if (res.status === 401) throw new Error('Unauthorized');
+                if (!res.ok) throw new Error('Remove failed');
+            } catch (e) {
+                console.error('remove shortlist error', e);
+                setShortlisted(prev => prev.includes(id) ? prev : [...prev, id]);
+            }
+        })();
     };
 
     return (
         <div className="min-h-screen bg-background">
             <Header />
-            
             <main className="pt-24">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-                    
-                    {activeTab === 'profile' && (
-                        <div className="space-y-8">
-                            <PersonalDetails />
-                            <EducationalQualifications onSuggestCareers={handleSuggestCareers} />
-                        </div>
-                    )}
-
-                    {activeTab === 'search' && (
-                        <div className="flex flex-col lg:flex-row gap-8">
-                           <CollegeSearchFilters />
-                           <div className="w-full lg:w-3/4">
-                                <div className="space-y-6">
-                                    <div className="mb-6">
-                                        <h2 className="text-2xl font-bold text-foreground mb-2">🏛️ Available Colleges</h2>
-                                        <p className="text-muted-foreground">Discover your perfect college match from our comprehensive database</p>
-                                    </div>
-                                    {colleges.map(college => (
-                                        <CollegeCard 
-                                            key={college.id} 
-                                            college={college} 
-                                            isShortlisted={shortlisted.includes(college.id)}
-                                            onShortlistToggle={handleShortlistToggle}
-                                            onViewDetails={(c) => navigate(`/colleges/${c.id}`)}
-                                        />
-                                    ))}
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        <CollegeSearchFilters />
+                        <div className="w-full lg:w-3/4">
+                            <div className="space-y-6">
+                                <div className="mb-6">
+                                    <h2 className="text-2xl font-bold text-foreground mb-2">🏛️ Available Colleges</h2>
+                                    <p className="text-muted-foreground">Discover your perfect college match from our comprehensive database</p>
                                 </div>
-                                <ShortlistedColleges 
-                                    colleges={colleges.filter(c => shortlisted.includes(c.id))}
-                                    onCompare={handleCompareColleges}
-                                    onRemove={handleRemoveShortlisted}
-                                />
-                           </div>
+                                {colleges.map(college => (
+                                    <CollegeCard
+                                        key={college.id}
+                                        college={college}
+                                        isShortlisted={shortlisted.includes(college.id)}
+                                        onShortlistToggle={handleShortlistToggle}
+                                        onViewDetails={(c) => navigate(`/colleges/${c.id}`)}
+                                    />
+                                ))}
+                                                {shortlistLoading && (
+                                                    <p className="text-sm text-muted-foreground">Loading shortlist...</p>
+                                                )}
+                                                {shortlistError && (
+                                                    <p className="text-sm text-destructive">{shortlistError}</p>
+                                                )}
+                            </div>
+                            <ShortlistedColleges
+                                colleges={colleges.filter(c => shortlisted.includes(c.id))}
+                                onCompare={handleCompareColleges}
+                                onRemove={handleRemoveShortlisted}
+                            />
                         </div>
-                    )}
+                    </div>
                 </div>
             </main>
-            
-            <GeminiModal 
+            <GeminiModal
                 isOpen={isModalOpen}
                 title={modalTitle}
                 content={modalContent}
