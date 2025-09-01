@@ -1,5 +1,6 @@
 import CollegeAdmin from '../model/CollegeAdmin.js';
 import College from '../model/College.js';
+import Shortlist from '../model/Shortlist.js';
 import bcrypt from 'bcryptjs';
 const fileMetaFrom = (file) => ({
   url: file ? `/uploads/college-admins/${file.filename}` : undefined,
@@ -24,7 +25,7 @@ export const createCollegeAdmin = async (req, res) => {
   try {
     // Only authenticated college accounts can create their single admin profile
     const user = req.user;
-    if (!user || user.role !== 'college') return res.status(403).json({ error: 'Only college accounts can create their profile' });
+    if (!user || user.role !== 'college' ) return res.status(403).json({ error: 'Only college accounts can create their profile' });
 
     const collegeId = user.id;
     // Check if profile already exists
@@ -108,6 +109,7 @@ export const getCollegeAdmin = async (req, res) => {
 export const updateCollegeAdmin = async (req, res) => {
   try {
     const user = req.user;
+    console.log("os",user);
     if (!user || user.role !== 'college') return res.status(403).json({ error: 'Only college accounts can update their profile' });
     const collegeId = user.id;
 
@@ -169,6 +171,49 @@ export const deleteCollegeAdmin = async (req, res) => {
   return res.status(501).json({ message: 'Not implemented' });
 };
 
+// Get forwarded students for a specific college
+export const getForwardedStudents = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || user.role !== 'college') {
+      return res.status(403).json({ error: 'Only college accounts can access this' });
+    }
+  console.log(user.id);
+    // Get the college admin profile
+    const collegeAdmin = await CollegeAdmin.findOne({ college: user.id });
+    if (!collegeAdmin) {
+      return res.status(405).json({ error: 'College admin profile not found' });
+    }
+
+    // Find all admin-forwarded shortlists for this college
+    const forwardedStudents = await Shortlist.find({ 
+      college: collegeAdmin._id, 
+      isAdminForwarded: true 
+    })
+    .populate('student', '-password') // Get full student info
+    .populate('college', 'name email') // Get college info
+    .sort({ createdAt: -1 });
+
+    const studentsData = forwardedStudents.map(shortlist => ({
+      id: shortlist.student._id,
+      name: `${shortlist.student.firstName} ${shortlist.student.lastName}`,
+      email: shortlist.student.email,
+      phone: shortlist.student.phone,
+      dateOfBirth: shortlist.student.dateOfBirth,
+      education: shortlist.student.education,
+      interestedCourses: shortlist.interestedCourses,
+      notes: shortlist.notes,
+      forwardedAt: shortlist.createdAt,
+      college: shortlist.college
+    }));
+
+    res.json({ students: studentsData });
+  } catch (error) {
+    console.error("Error fetching forwarded students:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export default {
   listCollegeAdmins,
   createCollegeAdmin,
@@ -176,4 +221,5 @@ export default {
   updateCollegeAdmin,
   deleteCollegeAdmin,
   getMyCollegeAdmin,
+  getForwardedStudents,
 };

@@ -7,6 +7,7 @@ const shortlistSchema = new mongoose.Schema({
   college: { type: mongoose.Schema.Types.ObjectId, ref: 'CollegeAdmin', required: true, index: true },
   notes: { type: String },
   interestedCourses: { type: [{ parent: String, name: String, addedAt: { type: Date, default: Date.now } }], default: [] },
+  isAdminForwarded: { type: Boolean, default: false }, // Track if this was forwarded by admin
   createdAt: { type: Date, default: Date.now }
 });
 

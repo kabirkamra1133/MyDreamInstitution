@@ -1,9 +1,11 @@
 import express from 'express';
-import { listShortlisted, addShortlist, removeShortlist, toggleShortlist, listStudentsForCollege, listShortlistStats } from '../controller/shortlistController.js';
+import { getMyShortlists, listShortlisted, addShortlist, removeShortlist, toggleShortlist, listStudentsForCollege, listShortlistStats } from '../controller/shortlistController.js';
 import { authenticate, authorize } from '../middleware/middleware.js';
 
 const router = express.Router();
 
+// Get current user's shortlists
+router.get('/my-shortlists', authenticate, getMyShortlists);
 // For now authenticate middleware is placed; adjust authorize if roles needed
 router.get('/', authenticate, listShortlisted); // query param or auth user
 router.post('/', authenticate, addShortlist); // body: { collegeId, notes? }

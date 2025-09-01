@@ -9,7 +9,6 @@ import {
   Edit, 
   Trash2, 
   X, 
-  Send, 
   User, 
   School, 
   BookOpen,
@@ -20,7 +19,10 @@ import {
   AlertCircle,
   Loader2,
   ListOrdered,
-  RefreshCw
+  RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,14 +44,39 @@ interface College {
     email: string;
     phone: string;
 }
+
+interface BackendUser {
+    _id: string;
+    name?: string;
+    email: string;
+    mainCourse?: string;
+    subCourse?: string;
+    collegeFinalized?: string;
+    courseFinalized?: string;
+    counselor?: string;
+}
+
+interface CourseSelection {
+    college: {
+        _id: string;
+        name: string;
+    };
+    courses: string[];
+    applicationStatus?: string;
+    notes?: string;
+    addedAt?: string;
+}
+
 interface CollegeRegistrationData {
     instituteCode : string,
     email: string;
     password: string
 }
+
 interface Student {
     id: string;
     name: string;
+    email: string;
     mainCourse: string;
     subCourse: string;
     collegesSelected: string[];
@@ -57,6 +84,7 @@ interface Student {
     coursesSelected: string[];
     courseFinalized: string;
     counselor: string;
+    courseSelections?: CourseSelection[];
 }
 
 interface AdmittedStudent {
@@ -90,67 +118,89 @@ const Spinner: FC = () => (
     </div>
 );
 
-// --- MODAL COMPONENT ---
-interface EmailModalProps {
+// --- FORWARD STUDENT MODAL ---
+interface ForwardStudentModalProps {
     student: Student | null;
     onClose: () => void;
 }
 
-const EmailModal: FC<EmailModalProps> = ({ student, onClose }) => {
-    const [subject, setSubject] = useState('');
-    const [body, setBody] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+const ForwardStudentModal: FC<ForwardStudentModalProps> = ({ student, onClose }) => {
+    const [selectedCollege, setSelectedCollege] = useState('');
+    const [notes, setNotes] = useState('');
+    const [isForwarding, setIsForwarding] = useState(false);
+    const [colleges, setColleges] = useState<{_id: string, name: string}[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
 
-    const draftEmail = useCallback(async () => {
-        if (!student || !student.collegeFinalized || !student.courseFinalized) {
-            setError("Student's finalized college and course are required.");
+    // Fetch available colleges for forwarding
+    useEffect(() => {
+        const fetchColleges = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/college-admins', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setColleges(data.data || []);
+                }
+            } catch (error) {
+                console.error('Error fetching colleges:', error);
+            }
+        };
+        fetchColleges();
+    }, []);
+
+    const handleForward = async () => {
+        if (!student || !selectedCollege) {
+            setError('Please select a college to forward to');
             return;
         }
 
-        setIsLoading(true);
+        setIsForwarding(true);
         setError(null);
 
-    // (Prompt removed - previously unused variable causing lint warning)
-
         try {
-            // Simulate API call
-            setTimeout(() => {
-                setSubject(`Student Referral: ${student.name} for ${student.courseFinalized}`);
-                setBody(`Dear Admissions Team,
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/users/forward', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    studentId: student.id,
+                    collegeId: selectedCollege,
+                    courses: [student.courseFinalized || student.mainCourse],
+                    notes: notes
+                })
+            });
 
-I hope this email finds you well. I am writing to refer ${student.name}, an exceptional student who has expressed strong interest in your ${student.courseFinalized} program.
-
-${student.name} has demonstrated excellent academic performance and commitment to their field of study. After careful consideration of their academic goals and our discussion about their career aspirations, I believe your institution would be an ideal fit for their educational journey.
-
-I would appreciate the opportunity to discuss ${student.name}'s application further. Please let me know if you require any additional information or documentation.
-
-Best regards,
-${student.counselor}
-Dream Institution`);
-                setIsLoading(false);
-            }, 2000);
-        } catch (err) {
-            console.error("Error generating email:", err);
-            setError(err instanceof Error ? err.message : "An unknown error occurred.");
-            setIsLoading(false);
+            if (response.ok) {
+                setSuccess(true);
+                setTimeout(() => onClose(), 2000);
+            } else {
+                const errorData = await response.json();
+                setError(errorData.message || 'Failed to forward student');
+            }
+        } catch (error) {
+            setError('Error forwarding student');
+            console.error('Error:', error);
+        } finally {
+            setIsForwarding(false);
         }
-    }, [student]);
-
-    useEffect(() => {
-        draftEmail();
-    }, [draftEmail]);
+    };
 
     if (!student) return null;
 
     return (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-premium">
+            <Card className="w-full max-w-2xl shadow-premium">
                 <CardHeader className="border-b">
                     <div className="flex justify-between items-center">
                         <CardTitle className="flex items-center gap-2">
-                            <Mail className="w-5 h-5 text-primary" />
-                            Draft Forwarding Email
+                            <Sparkles className="w-5 h-5 text-primary" />
+                            Forward Student Profile
                         </CardTitle>
                         <Button variant="ghost" size="icon" onClick={onClose}>
                             <X className="w-4 h-4" />
@@ -158,40 +208,84 @@ Dream Institution`);
                     </div>
                 </CardHeader>
                 <CardContent className="p-6">
-                    {isLoading ? <Spinner /> : error ? (
-                        <div className="text-center p-6 bg-destructive/10 rounded-lg">
-                            <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-                            <p className="text-destructive font-medium mb-2">Error: {error}</p>
-                            <p className="text-muted-foreground">Could not generate email draft. Please try again later.</p>
+                    {success ? (
+                        <div className="text-center p-6 bg-green-50 rounded-lg">
+                            <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-green-800 mb-2">Student Forwarded Successfully!</h3>
+                            <p className="text-green-700">The student profile has been sent to the selected college.</p>
                         </div>
                     ) : (
                         <div className="space-y-6">
-                            <div>
-                                <label htmlFor="emailSubject" className="block text-sm font-medium mb-2">Subject</label>
-                                <Input 
-                                    id="emailSubject" 
-                                    value={subject} 
-                                    onChange={e => setSubject(e.target.value)}
-                                    className="font-medium"
-                                />
+                            {/* Student Info Summary */}
+                            <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-4 rounded-lg">
+                                <h3 className="font-semibold text-primary mb-2">Student Information</h3>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div><span className="font-medium">Name:</span> {student.name}</div>
+                                    <div><span className="font-medium">Email:</span> {student.email}</div>
+                                    <div><span className="font-medium">Main Course:</span> {student.mainCourse}</div>
+                                    <div><span className="font-medium">Sub Course:</span> {student.subCourse}</div>
+                                    <div><span className="font-medium">Finalized College:</span> {student.collegeFinalized || 'Not set'}</div>
+                                    <div><span className="font-medium">Finalized Course:</span> {student.courseFinalized || 'Not set'}</div>
+                                </div>
                             </div>
+
+                            {/* College Selection */}
                             <div>
-                                <label htmlFor="emailBody" className="block text-sm font-medium mb-2">Message Body</label>
+                                <label className="block text-sm font-medium mb-2">Select College to Forward To *</label>
+                                <select 
+                                    value={selectedCollege} 
+                                    onChange={(e) => setSelectedCollege(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                                    required
+                                >
+                                    <option value="">Choose a college...</option>
+                                    {colleges.map(college => (
+                                        <option key={college._id} value={college._id}>
+                                            {college.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Additional Notes */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Additional Notes (Optional)</label>
                                 <Textarea 
-                                    id="emailBody" 
-                                    value={body} 
-                                    onChange={e => setBody(e.target.value)} 
-                                    rows={12}
+                                    value={notes} 
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    placeholder="Add any additional information about this student..."
+                                    rows={4}
                                     className="resize-none"
                                 />
                             </div>
+
+                            {error && (
+                                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                                    {error}
+                                </div>
+                            )}
+
+                            {/* Action Buttons */}
                             <div className="flex justify-end gap-3">
                                 <Button variant="outline" onClick={onClose}>
                                     Cancel
                                 </Button>
-                                <Button className="bg-gradient-primary">
-                                    <Send className="w-4 h-4 mr-2" />
-                                    Send Email
+                                <Button 
+                                    onClick={handleForward}
+                                    disabled={isForwarding || !selectedCollege}
+                                    className="bg-gradient-primary"
+                                >
+                                    {isForwarding ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Forwarding...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="w-4 h-4 mr-2" />
+                                            Forward Student
+                                        </>
+                                    )}
                                 </Button>
                             </div>
                         </div>
@@ -212,8 +306,23 @@ interface StudentDetailsModalProps {
 const StudentDetailsModal: FC<StudentDetailsModalProps> = ({ studentId, initialName, onClose }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [items, setItems] = useState<any[]>([]);
-    const [studentInfo, setStudentInfo] = useState<{ name?: string; email?: string; phone?: string } | null>(null);
+    const [items, setItems] = useState<CourseSelection[]>([]);
+    const [studentInfo, setStudentInfo] = useState<{
+        firstName?: string;
+        lastName?: string;
+        fullName?: string;
+        email?: string;
+        phone?: number;
+        dateOfBirth?: string;
+        education?: string;
+        role?: string;
+        createdAt?: string;
+        mainCourse?: string;
+        subCourse?: string;
+        collegeFinalized?: string;
+        courseFinalized?: string;
+        counselor?: string;
+    } | null>(null);
 
     useEffect(() => {
         if (!studentId) return;
@@ -222,24 +331,35 @@ const StudentDetailsModal: FC<StudentDetailsModalProps> = ({ studentId, initialN
             setLoading(true); setError(null);
             try {
                 const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-                const res = await fetch(`/api/shortlists?student=${encodeURIComponent(studentId)}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-                if (!res.ok) throw new Error('Failed to load student details');
-                const body = await res.json();
-                const data = Array.isArray(body.data) ? body.data : body.data && Array.isArray([body.data]) ? [body.data] : [];
-                if (!mounted) return;
-                setItems(data.map(d => ({ college: d.college?.name || d.college, interestedCourses: d.interestedCourses || [], notes: d.notes, createdAt: d.createdAt })));
-                // try to set basic student info from populated student field if present
-                if (data[0] && data[0].student) {
-                    setStudentInfo({ name: `${data[0].student.firstName || ''} ${data[0].student.lastName || ''}`.trim(), email: data[0].student.email });
-                } else {
-                    setStudentInfo({ name: initialName });
+                
+                // Get complete student info from new endpoint
+                const userRes = await fetch(`/api/users/student/${encodeURIComponent(studentId)}/info`, { 
+                    headers: token ? { Authorization: `Bearer ${token}` } : {} 
+                });
+                if (!userRes.ok) throw new Error('Failed to load student info');
+                const userResponse = await userRes.json();
+                
+                // Get student's course selections
+                const detailsRes = await fetch(`/api/users/student/${encodeURIComponent(studentId)}/details`, { 
+                    headers: token ? { Authorization: `Bearer ${token}` } : {} 
+                });
+                let courseSelections = [];
+                if (detailsRes.ok) {
+                    const detailsData = await detailsRes.json();
+                    courseSelections = detailsData.courseSelections || [];
+                }
+                
+                // Set student info from user data
+                if (mounted) {
+                    setStudentInfo(userResponse.student);
+                    setItems(courseSelections);
                 }
             } catch (e) {
                 setError(e instanceof Error ? e.message : 'Error');
             } finally { if (mounted) setLoading(false); }
         })();
         return () => { mounted = false; };
-    }, [studentId]);
+    }, [studentId, initialName]);
 
     if (!studentId) return null;
 
@@ -256,39 +376,92 @@ const StudentDetailsModal: FC<StudentDetailsModalProps> = ({ studentId, initialN
                     {loading ? <Spinner /> : error ? (
                         <div className="text-center text-destructive">{error}</div>
                     ) : (
-                        <div className="space-y-4">
-                            <div>
-                                <div className="text-sm text-muted-foreground">Name</div>
-                                <div className="font-medium">{studentInfo?.name || initialName || 'Unknown'}</div>
+                        <div className="space-y-6">
+                            {/* Basic Student Information */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <div className="text-sm text-muted-foreground">Name</div>
+                                    <div className="font-medium">{studentInfo?.fullName || `${studentInfo?.firstName || ''} ${studentInfo?.lastName || ''}`.trim() || initialName || 'Unknown'}</div>
+                                </div>
+                                <div>
+                                    <div className="text-sm text-muted-foreground">Email</div>
+                                    <div className="font-medium">{studentInfo?.email || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div className="text-sm text-muted-foreground">Phone</div>
+                                    <div className="font-medium">{studentInfo?.phone || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div className="text-sm text-muted-foreground">Date of Birth</div>
+                                    <div className="font-medium">{studentInfo?.dateOfBirth ? new Date(studentInfo.dateOfBirth).toLocaleDateString() : 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div className="text-sm text-muted-foreground">Education Background</div>
+                                    <div className="font-medium">{studentInfo?.education || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div className="text-sm text-muted-foreground">Registration Date</div>
+                                    <div className="font-medium">{studentInfo?.createdAt ? new Date(studentInfo.createdAt).toLocaleDateString() : 'N/A'}</div>
+                                </div>
+                                {studentInfo?.counselor && (
+                                    <div>
+                                        <div className="text-sm text-muted-foreground">Assigned Counselor</div>
+                                        <div className="font-medium">{studentInfo.counselor}</div>
+                                    </div>
+                                )}
+                                {studentInfo?.collegeFinalized && (
+                                    <div>
+                                        <div className="text-sm text-muted-foreground">Finalized College</div>
+                                        <div className="font-medium text-green-600">{studentInfo.collegeFinalized}</div>
+                                    </div>
+                                )}
+                                {studentInfo?.courseFinalized && (
+                                    <div>
+                                        <div className="text-sm text-muted-foreground">Finalized Course</div>
+                                        <div className="font-medium text-green-600">{studentInfo.courseFinalized}</div>
+                                    </div>
+                                )}
                             </div>
-                            <div>
-                                <div className="text-sm text-muted-foreground">Email</div>
-                                <div className="font-medium">{studentInfo?.email || 'N/A'}</div>
-                            </div>
+
+                            {/* Course Selections */}
                             {items.length === 0 ? (
-                                <div className="text-sm text-muted-foreground">No shortlist entries found for this student.</div>
+                                <div className="text-sm text-muted-foreground">No college applications found for this student.</div>
                             ) : (
                                 <div>
-                                    <div className="text-sm text-muted-foreground mb-2">Shortlist Entries</div>
-                                    <ul className="space-y-3">
-                                        {items.map((it, idx) => (
-                                            <li key={idx} className="p-3 bg-card rounded">
-                                                <div className="text-sm font-medium">{it.college}</div>
-                                                <div className="text-xs text-muted-foreground">Added: {new Date(it.createdAt).toLocaleString()}</div>
-                                                {Array.isArray(it.interestedCourses) && it.interestedCourses.length > 0 && (
-                                                    <div className="mt-2 text-sm">
-                                                        <div className="text-xs text-muted-foreground">Interested Courses:</div>
-                                                        <div className="flex flex-wrap gap-1 mt-1">
-                                                            {it.interestedCourses.map((c: any, i: number) => (
-                                                                <Badge key={`${i}-${c.name}`} variant="secondary" className="text-xs">{c.parent} — {c.name}</Badge>
+                                    <div className="text-sm text-muted-foreground mb-3">College Applications & Course Selections</div>
+                                    <div className="space-y-3">
+                                        {items.map((selection, idx) => (
+                                            <div key={idx} className="p-4 bg-card rounded-lg border">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div className="font-medium text-primary">{selection.college.name}</div>
+                                                    {selection.applicationStatus && (
+                                                        <Badge variant="secondary">{selection.applicationStatus}</Badge>
+                                                    )}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground mb-2">
+                                                    Applied: {selection.addedAt ? new Date(selection.addedAt).toLocaleString() : 'Unknown'}
+                                                </div>
+                                                {Array.isArray(selection.courses) && selection.courses.length > 0 && (
+                                                    <div className="mt-2">
+                                                        <div className="text-xs text-muted-foreground mb-1">Selected Courses:</div>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {selection.courses.map((course, courseIndex) => (
+                                                                <Badge key={courseIndex} variant="outline" className="text-xs">
+                                                                    {course}
+                                                                </Badge>
                                                             ))}
                                                         </div>
                                                     </div>
                                                 )}
-                                                {it.notes && (<div className="mt-2 text-sm text-muted-foreground">Notes: {it.notes}</div>)}
-                                            </li>
+                                                {selection.notes && (
+                                                    <div className="mt-2 text-sm text-muted-foreground">
+                                                        <span className="font-medium">Notes: </span>
+                                                        {selection.notes}
+                                                    </div>
+                                                )}
+                                            </div>
                                         ))}
-                                    </ul>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -577,68 +750,119 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
     const [students, setStudents] = useState<Student[]>([]);
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [selectedStudentName, setSelectedStudentName] = useState<string | undefined>(undefined);
+    const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
+    const [loadingDetails, setLoadingDetails] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
+    // Fetch all students from users endpoint
     useEffect(() => {
         let mounted = true;
-        const load = async () => {
+        const fetchStudents = async () => {
             setLoading(true); setError(null);
             try {
-                // Fetch aggregated shortlist stats to discover colleges
-                const res = await fetch('/api/shortlists/stats/aggregate', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-                if (!res.ok) throw new Error('Failed to load shortlist stats');
-                const body = await res.json();
-                const stats = Array.isArray(body.data) ? body.data : [];
-
-                const studentMap = new Map<string, Student>();
-                for (const stat of stats) {
-                    try {
-                        const r2 = await fetch(`/api/shortlists/college/${stat.collegeAdminId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-                        if (!r2.ok) continue;
-                        const b2 = await r2.json();
-                        const list = Array.isArray(b2.students) ? b2.students : [];
-                        for (const s of list) {
-                            const id = s.id ?? s._id ?? `${Math.random()}`;
-                            const existing = studentMap.get(String(id));
-                            if (!existing) {
-                                studentMap.set(String(id), {
-                                    id: String(id),
-                                    name: `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim() || 'Unnamed',
-                                    mainCourse: '',
-                                    subCourse: '',
-                                    collegesSelected: [stat.name ?? 'Unknown'],
-                                    collegeFinalized: '',
-                                    coursesSelected: [],
-                                    courseFinalized: '',
-                                    counselor: ''
-                                });
-                            } else {
-                                existing.collegesSelected = Array.from(new Set([...existing.collegesSelected, stat.name ?? 'Unknown']));
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Failed to fetch students for college', stat, e);
-                        continue;
-                    }
+                const response = await fetch('/api/users', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const transformedStudents: Student[] = data.users.map((user: BackendUser) => ({
+                        id: user._id,
+                        name: user.name || user.email,
+                        email: user.email,
+                        mainCourse: user.mainCourse || 'Not Specified',
+                        subCourse: user.subCourse || 'Not Specified',
+                        collegesSelected: [], // Will be populated when expanded
+                        collegeFinalized: user.collegeFinalized || '',
+                        coursesSelected: [], // Will be populated when expanded
+                        courseFinalized: user.courseFinalized || '',
+                        counselor: user.counselor || 'Not Assigned'
+                    }));
+                    if (mounted) setStudents(transformedStudents);
+                } else {
+                    if (mounted) setError('Failed to fetch students');
                 }
-                if (mounted) setStudents(Array.from(studentMap.values()));
-            } catch (e) {
-                setError(e instanceof Error ? e.message : 'Error loading student leads');
-            } finally { if (mounted) setLoading(false); }
+            } catch (err) {
+                if (mounted) setError('Error fetching students');
+                console.error('Error fetching students:', err);
+            } finally {
+                if (mounted) setLoading(false);
+            }
         };
-        load();
+        fetchStudents();
         return () => { mounted = false; };
     }, [token]);
 
-    const handleFinalize = (studentId: string, field: 'college' | 'course', value: string) => {
-        setStudents(prev => prev.map(s => {
-            if (s.id === studentId) {
-                return field === 'college' ? { ...s, collegeFinalized: value } : { ...s, courseFinalized: value };
+    const fetchStudentDetails = async (studentId: string) => {
+        try {
+            setLoadingDetails(prev => new Set(prev).add(studentId));
+            const response = await fetch(`/api/users/student/${studentId}/details`, {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (response.ok) {
+                const studentDetails = await response.json();
+                setStudents(prev => prev.map(s => 
+                    s.id === studentId ? { 
+                        ...s, 
+                        courseSelections: studentDetails.courseSelections,
+                        collegesSelected: studentDetails.courseSelections?.map((cs: CourseSelection) => cs.college.name) || [],
+                        coursesSelected: studentDetails.courseSelections?.flatMap((cs: CourseSelection) => cs.courses) || []
+                    } : s
+                ));
+            } else {
+                console.error('Failed to fetch student details');
             }
-            return s;
-        }));
+        } catch (error) {
+            console.error('Error fetching student details:', error);
+        } finally {
+            setLoadingDetails(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(studentId);
+                return newSet;
+            });
+        }
+    };
+
+    const toggleStudentExpansion = async (studentId: string) => {
+        const newExpanded = new Set(expandedStudents);
+        if (newExpanded.has(studentId)) {
+            newExpanded.delete(studentId);
+        } else {
+            newExpanded.add(studentId);
+            const student = students.find(s => s.id === studentId);
+            if (student && !student.courseSelections) {
+                await fetchStudentDetails(studentId);
+            }
+        }
+        setExpandedStudents(newExpanded);
+    };
+
+    const handleFinalize = async (studentId: string, field: 'college' | 'course', value: string) => {
+        try {
+            const response = await fetch(`/api/users/${studentId}/finalize`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ field, value })
+            });
+
+            if (response.ok) {
+                setStudents(prev => prev.map(s => {
+                    if (s.id === studentId) {
+                        return field === 'college' 
+                            ? { ...s, collegeFinalized: value } 
+                            : { ...s, courseFinalized: value };
+                    }
+                    return s;
+                }));
+            }
+        } catch (error) {
+            console.error('Error finalizing:', error);
+        }
     };
 
     return (
@@ -659,6 +883,7 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/50">
+                            <TableHead className="font-semibold w-12">Expand</TableHead>
                             <TableHead className="font-semibold">Student Details</TableHead>
                             <TableHead className="font-semibold">Colleges Selected</TableHead>
                             <TableHead className="font-semibold">College Finalized</TableHead>
@@ -668,102 +893,202 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {students.map(student => (
-                            <TableRow key={student.id} className="hover:bg-muted/25 transition-colors">
-                                <TableCell>
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-primary/10 rounded-full">
-                                            <User className="w-4 h-4 text-primary" />
-                                        </div>
-                                        <div>
-                                            <button className="font-semibold text-foreground text-left" onClick={() => { setSelectedStudentId(student.id); setSelectedStudentName(student.name); }}>
-                                                {student.name}
-                                            </button>
-                                            <div className="text-sm text-muted-foreground">
-                                                {student.mainCourse} • {student.counselor}
-                                            </div>
-                                            <Badge variant="outline" className="text-xs mt-1">{student.id}</Badge>
-                                        </div>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex flex-wrap gap-1">
-                                        {student.collegesSelected.map(college => (
-                                            <Badge 
-                                                key={college} 
-                                                variant="outline" 
-                                                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs"
-                                                onClick={() => handleFinalize(student.id, 'college', college)}
-                                            >
-                                                {college}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    {student.collegeFinalized ? (
-                                        <Badge className="bg-success text-success-foreground">
-                                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                                            {student.collegeFinalized}
-                                        </Badge>
-                                    ) : (
-                                        <Badge variant="outline" className="text-muted-foreground">
-                                            <AlertCircle className="w-3 h-3 mr-1" />
-                                            Pending
-                                        </Badge>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex flex-wrap gap-1">
-                                        {student.coursesSelected.map(course => (
-                                            <Badge 
-                                                key={course} 
-                                                variant="outline" 
-                                                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs"
-                                                onClick={() => handleFinalize(student.id, 'course', course)}
-                                            >
-                                                {course}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    {student.courseFinalized ? (
-                                        <Badge className="bg-success text-success-foreground">
-                                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                                            {student.courseFinalized}
-                                        </Badge>
-                                    ) : (
-                                        <Badge variant="outline" className="text-muted-foreground">
-                                            <AlertCircle className="w-3 h-3 mr-1" />
-                                            Pending
-                                        </Badge>
-                                    )}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                    <div className="flex justify-center gap-2">
-                                        <Button size="sm" variant="outline" onClick={() => { setSelectedStudentId(student.id); setSelectedStudentName(student.name); }}>
-                                            Info
-                                        </Button>
-                                        <Button 
-                                            onClick={() => onForwardProfile(student)} 
-                                            size="sm"
-                                            className="bg-gradient-primary"
-                                            disabled={!student.collegeFinalized || !student.courseFinalized}
-                                        >
-                                            <Send className="w-4 h-4 mr-2" />
-                                            Forward
-                                        </Button>
-                                    </div>
+                        {students.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={7} className="text-center py-8">
+                                    <p className="text-muted-foreground">No students found</p>
                                 </TableCell>
                             </TableRow>
-                        ))}
+                        ) : (
+                            students.map(student => (
+                                <React.Fragment key={student.id}>
+                                    <TableRow className="hover:bg-muted/25 transition-colors">
+                                        <TableCell>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => toggleStudentExpansion(student.id)}
+                                                disabled={loadingDetails.has(student.id)}
+                                                className="p-1 h-8 w-8"
+                                            >
+                                                {loadingDetails.has(student.id) ? (
+                                                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                                ) : expandedStudents.has(student.id) ? (
+                                                    <ChevronDown className="w-4 h-4" />
+                                                ) : (
+                                                    <ChevronRight className="w-4 h-4" />
+                                                )}
+                                            </Button>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-primary/10 rounded-full">
+                                                    <User className="w-4 h-4 text-primary" />
+                                                </div>
+                                                <div>
+                                                    <button className="font-semibold text-foreground text-left" onClick={() => { setSelectedStudentId(student.id); setSelectedStudentName(student.name); }}>
+                                                        {student.name}
+                                                    </button>
+                                                    <div className="text-sm text-muted-foreground">
+                                                        {student.mainCourse} • {student.counselor}
+                                                    </div>
+                                                    <Badge variant="outline" className="text-xs mt-1">{student.id}</Badge>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-wrap gap-1">
+                                                {student.collegesSelected?.length > 0 ? student.collegesSelected.map(college => (
+                                                    <Badge 
+                                                        key={college} 
+                                                        variant="outline" 
+                                                        className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs"
+                                                        onClick={() => handleFinalize(student.id, 'college', college)}
+                                                    >
+                                                        {college}
+                                                    </Badge>
+                                                )) : (
+                                                    <span className="text-xs text-muted-foreground">Click expand to see selections</span>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {student.collegeFinalized ? (
+                                                <Badge className="bg-success text-success-foreground">
+                                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                                    {student.collegeFinalized}
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="outline" className="text-muted-foreground">
+                                                    <AlertCircle className="w-3 h-3 mr-1" />
+                                                    Pending
+                                                </Badge>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-wrap gap-1">
+                                                {student.coursesSelected?.length > 0 ? student.coursesSelected.map(course => (
+                                                    <Badge 
+                                                        key={course} 
+                                                        variant="outline" 
+                                                        className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs"
+                                                        onClick={() => handleFinalize(student.id, 'course', course)}
+                                                    >
+                                                        {course}
+                                                    </Badge>
+                                                )) : (
+                                                    <span className="text-xs text-muted-foreground">Click expand to see selections</span>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {student.courseFinalized ? (
+                                                <Badge className="bg-success text-success-foreground">
+                                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                                    {student.courseFinalized}
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="outline" className="text-muted-foreground">
+                                                    <AlertCircle className="w-3 h-3 mr-1" />
+                                                    Pending
+                                                </Badge>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <div className="flex justify-center gap-2">
+                                                <Button size="sm" variant="outline" onClick={() => { 
+                                                    setSelectedStudentId(student.id); 
+                                                    setSelectedStudentName(student.name);
+                                                }}>
+                                                    Info
+                                                </Button>
+                                                <Button 
+                                                    onClick={() => onForwardProfile(student)} 
+                                                    size="sm"
+                                                    className="bg-gradient-to-r from-primary to-primary/80"
+                                                    disabled={!student.collegeFinalized || !student.courseFinalized}
+                                                >
+                                                    <Sparkles className="w-4 h-4 mr-1" />
+                                                    Forward
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                    
+                                    {/* Expanded row showing detailed course selections */}
+                                    {expandedStudents.has(student.id) && (
+                                        <TableRow>
+                                            <TableCell colSpan={7} className="bg-gradient-to-r from-primary/5 to-primary/10 border-t">
+                                                <div className="p-4">
+                                                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-primary">
+                                                        <BookOpen className="w-4 h-4" />
+                                                        Detailed Course Selections & Applications
+                                                    </h4>
+                                                    {loadingDetails.has(student.id) ? (
+                                                        <div className="text-center py-4">
+                                                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                                                            <p className="text-sm text-muted-foreground">Loading course details...</p>
+                                                        </div>
+                                                    ) : !student.courseSelections ? (
+                                                        <div className="text-center py-4">
+                                                            <p className="text-muted-foreground">Click to load detailed course selections...</p>
+                                                        </div>
+                                                    ) : student.courseSelections.length === 0 ? (
+                                                        <div className="text-center py-4">
+                                                            <p className="text-muted-foreground">This student hasn't applied to any colleges yet.</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid gap-3">
+                                                            {student.courseSelections.map((selection, index) => (
+                                                                <div key={index} className="border rounded-lg p-4 bg-white shadow-sm">
+                                                                    <div className="flex justify-between items-start mb-3">
+                                                                        <h5 className="font-medium text-lg text-primary">{selection.college.name}</h5>
+                                                                        {selection.applicationStatus && (
+                                                                            <Badge variant="secondary" className="bg-secondary/10 text-secondary">
+                                                                                {selection.applicationStatus}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    {selection.courses.length > 0 && (
+                                                                        <div className="mb-2">
+                                                                            <p className="text-sm font-medium text-muted-foreground mb-1">Applied Courses:</p>
+                                                                            <div className="flex flex-wrap gap-1">
+                                                                                {selection.courses.map((course, courseIndex) => (
+                                                                                    <Badge key={courseIndex} variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
+                                                                                        {course}
+                                                                                    </Badge>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                    {selection.notes && (
+                                                                        <div className="mt-2 p-2 bg-muted/30 rounded text-sm">
+                                                                            <span className="font-medium">Notes: </span>
+                                                                            {selection.notes}
+                                                                        </div>
+                                                                    )}
+                                                                    {selection.addedAt && (
+                                                                        <div className="text-xs text-muted-foreground mt-2">
+                                                                            Applied on: {new Date(selection.addedAt).toLocaleDateString()}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </React.Fragment>
+                            ))
+                        )}
                     </TableBody>
                 </Table>
                 )}
-            {selectedStudentId && (
-                <StudentDetailsModal studentId={selectedStudentId} initialName={selectedStudentName} onClose={() => { setSelectedStudentId(null); setSelectedStudentName(undefined); }} />
-            )}
+                {selectedStudentId && (
+                    <StudentDetailsModal studentId={selectedStudentId} initialName={selectedStudentName} onClose={() => { setSelectedStudentId(null); setSelectedStudentName(undefined); }} />
+                )}
             </CardContent>
         </Card>
     );
@@ -1125,7 +1450,7 @@ const AdminPortal: FC = () => {
 
             {/* Modal */}
             {isModalOpen && (
-                <EmailModal 
+                <ForwardStudentModal 
                     student={selectedStudent} 
                     onClose={() => setIsModalOpen(false)} 
                 />

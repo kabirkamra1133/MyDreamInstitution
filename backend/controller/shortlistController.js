@@ -8,6 +8,28 @@ const getStudentId = (req) => {
   return req.body.student || req.query.student || null;
 };
 
+// Get current user's shortlists with populated college data
+export const getMyShortlists = async (req, res) => {
+  try {
+    const studentId = req.user?.id;
+    if (!studentId) {
+      return res.status(400).json({ error: 'Student ID required' });
+    }
+
+    const shortlists = await Shortlist.find({ student: studentId })
+      .populate({
+        path: 'college',
+        select: 'name profile logo'
+      })
+      .lean();
+
+    return res.json({ shortlists });
+  } catch (error) {
+    console.error('getMyShortlists error:', error);
+    return res.status(500).json({ error: 'Server error' });
+  }
+};
+
 export const listShortlisted = async (req, res) => {
   try {
     const studentId = getStudentId(req);
@@ -173,4 +195,4 @@ export const listShortlistStats = async (req, res) => {
   }
 };
 
-export default { listShortlisted, addShortlist, removeShortlist, toggleShortlist, listStudentsForCollege, listShortlistStats };
+export default { getMyShortlists, listShortlisted, addShortlist, removeShortlist, toggleShortlist, listStudentsForCollege, listShortlistStats };

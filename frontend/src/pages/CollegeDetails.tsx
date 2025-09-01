@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { StudentShortlists } from '../components/StudentShortlists';
 
 interface Media { url?: string }
 interface Contact { primaryPhone?: string; email?: string }
@@ -25,6 +26,7 @@ const CollegeDetails: React.FC = () => {
   const [selectedParentCourse, setSelectedParentCourse] = useState<string>('');
   const [selectedSubCourse, setSelectedSubCourse] = useState<string>('');
   const [interestedCourses, setInterestedCourses] = useState<{ parent: string; name: string }[]>([]);
+  const [showMyShortlists, setShowMyShortlists] = useState<boolean>(false);
 
   useEffect(() => {
     if (!id) return;
@@ -105,6 +107,19 @@ const CollegeDetails: React.FC = () => {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="card-elevated p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">My Shortlisted Colleges</h3>
+                <button
+                  onClick={() => setShowMyShortlists(!showMyShortlists)}
+                  className="btn-outline text-sm"
+                >
+                  {showMyShortlists ? 'Hide' : 'View'} My Shortlists
+                </button>
+              </div>
+              {showMyShortlists && <StudentShortlists />}
             </div>
           </div>
 

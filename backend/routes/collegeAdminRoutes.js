@@ -6,6 +6,7 @@ import {
   updateCollegeAdmin,
   deleteCollegeAdmin,
   getMyCollegeAdmin,
+  getForwardedStudents,
 } from '../controller/collegeAdminController.js';
 import { authenticate, authorize } from '../middleware/middleware.js';
 import upload, { uploadCollegeMedia } from '../middleware/upload.js';
@@ -31,6 +32,8 @@ router.post('/upload', upload.single('file'), (req, res) => {
 
 // Get, update, delete single college admin
 router.get('/profile', authenticate, getMyCollegeAdmin);
+router.put('/profile', authenticate, updateCollegeAdmin);
+router.get('/forwarded-students', authenticate, getForwardedStudents);
 router.get('/:id', getCollegeAdmin);
 router.put('/:id', authenticate, updateCollegeAdmin);
 router.delete('/:id', authenticate, authorize('admin'), deleteCollegeAdmin);

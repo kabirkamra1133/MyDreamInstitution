@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initScrollEffects();
 });
 
-// Navigation Functions
+// Navigation Functionsjksadkjdak
 function initNavigation() {
     const hamburger = document.getElementById('hamburger');
     const navMenu = document.getElementById('nav-menu');

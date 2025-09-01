@@ -7,6 +7,28 @@ export interface College {
   phone: string;
 }
 
+export interface BackendUser {
+  _id: string;
+  name?: string;
+  email: string;
+  mainCourse?: string;
+  subCourse?: string;
+  collegeFinalized?: string;
+  courseFinalized?: string;
+  counselor?: string;
+}
+
+export interface CourseSelection {
+  college: {
+    _id: string;
+    name: string;
+  };
+  courses: string[];
+  applicationStatus?: string;
+  notes?: string;
+  addedAt?: string;
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -17,6 +39,7 @@ export interface Student {
   coursesSelected: string[];
   courseFinalized: string;
   counselor: string;
+  courseSelections?: CourseSelection[];
 }
 
 export interface AdmittedStudent {
