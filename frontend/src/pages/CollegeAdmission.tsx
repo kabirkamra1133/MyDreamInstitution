@@ -1,97 +1,23 @@
-import React, { useState, useEffect, FC } from 'react';
+import { useState, useEffect, useCallback, FC } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMainContext } from '../context/mainContext';
 
-// Defines the structure for a college record.
+// Defines the structure for a college record from /api/colleges endpoint.
 interface ICollege {
     id: string; // CollegeAdmin id
     collegeId?: string | null; // linked College id
     name: string;
     email?: string;
-    address?: string;
+    address?: string; // flat address string
     city?: string;
     state?: string;
     contactNumber?: string;
     createdAt?: string;
-    courses?: string[]; // array of course names
-    logo?: string | null;
-    coverPhoto?: string | null;
+    courses?: string[]; // array of course names (flattened)
+    logo?: string | null; // direct URL string
+    coverPhoto?: string | null; // direct URL string
     rating?: number | null;
 }
-
-// --- SVG ICONS ---
-// A collection of SVG icons used throughout the application for a consistent look.
-const Icons = {
-  logo: (
-    <svg className="h-8 w-auto text-primary" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2L3 7L12 12L21 7L12 2Z"/>
-      <path d="M3 17L12 22L21 17"/>
-      <path d="M3 12L12 17L21 12"/>
-    </svg>
-  ),
-  edit: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-      <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
-    </svg>
-  ),
-  delete: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-    </svg>
-  ),
-  upload: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-    </svg>
-  ),
-  save: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-    </svg>
-  ),
-  cancel: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-    </svg>
-  ),
-  finalise: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-    </svg>
-  ),
-  expert: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
-      <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h1a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
-    </svg>
-  ),
-  close: (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-    </svg>
-  ),
-  graduation: (
-    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-    </svg>
-  ),
-  form: (
-    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-  ),
-  chart: (
-    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-    </svg>
-  ),
-  support: (
-    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 2.25a9.75 9.75 0 109.75 9.75A9.75 9.75 0 0012 2.25z" />
-    </svg>
-  ),
-};
 
 // --- API HELPER ---
 async function callGeminiAPI(prompt: string, retries = 3, delay = 1000): Promise<string> {
@@ -132,83 +58,127 @@ async function callGeminiAPI(prompt: string, retries = 3, delay = 1000): Promise
 // --- UI COMPONENTS ---
 
 // Header Component with gradient background and professional styling
-const Header: FC = () => (
-    <header className="gradient-hero shadow-elegant fixed top-0 left-0 right-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-                <div className="flex-shrink-0 flex items-center">
-                    {Icons.logo}
-                    <span className="ml-3 text-xl font-bold text-primary-foreground">My Dream Institution</span>
-                </div>
-                <div className="flex items-center space-x-4">
-                    <span className="text-primary-foreground/90 font-medium hidden sm:block">Jane Doe</span>
-                    <img 
-                        className="h-10 w-10 rounded-full object-cover ring-2 ring-primary-foreground/20" 
-                        src="https://placehold.co/100x100/E2E8F0/4A5568?text=JD" 
-                        alt="Student Profile" 
-                        onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100/E2E8F0/4A5568?text=Error')} 
-                    />
-                    <button className="btn-outline border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary text-sm">
-                        Logout
-                    </button>
+const Header: FC = () => {
+    const navigate = useNavigate();
+    
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        navigate('/');
+    };
+
+    return (
+        <header className="bg-gradient-to-r from-emerald-600 to-emerald-700 shadow-lg fixed top-0 left-0 right-0 z-50">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-16">
+                    <div className="flex-shrink-0 flex items-center">
+                        <img src="/logo.png" alt="CollegeManzil" className="w-8 h-8 rounded-lg object-cover shadow-sm mr-3" />
+                        <span className="text-xl font-bold text-white">CollegeManzil</span>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                        <span className="text-white/90 font-medium hidden sm:block">Student Portal</span>
+                        <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
+                            <i className="fas fa-user text-white text-sm"></i>
+                        </div>
+                        <button 
+                            onClick={handleLogout}
+                            className="px-4 py-2 border border-white/30 text-white rounded-lg text-sm hover:bg-white/10 transition-all duration-300"
+                        >
+                            <i className="fas fa-sign-out-alt mr-2"></i>
+                            Logout
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </header>
-);
+        </header>
+    );
+};
 
 
 
 // EducationalQualifications Component
 
 // CollegeSearchFilters Component
-const CollegeSearchFilters: FC = () => (
-    <aside className="w-full lg:w-1/4 lg:sticky top-24 self-start">
-        <div className="card-elevated p-6 space-y-6">
-            <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                🔍 Search Filters
-            </h3>
-            
-            <div className="space-y-4">
-                <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">Course Type</label>
-                    <select className="form-input">
-                        <option>All Courses</option>
-                        <option>Engineering</option>
-                        <option>Medical</option>
-                        <option>Management</option>
-                        <option>Arts & Sciences</option>
-                    </select>
-                </div>
+interface SearchFiltersProps {
+    filters: {
+        searchTerm: string;
+        location: string;
+        course: string;
+    };
+    onFiltersChange: (filters: { searchTerm: string; location: string; course: string; }) => void;
+}
+
+const CollegeSearchFilters: FC<SearchFiltersProps> = ({ filters, onFiltersChange }) => {
+    const handleFilterChange = (key: string, value: string) => {
+        onFiltersChange({ ...filters, [key]: value });
+    };
+
+    const clearAllFilters = () => {
+        onFiltersChange({ searchTerm: '', location: '', course: '' });
+    };
+
+    return (
+        <aside className="w-full lg:w-1/4 lg:sticky top-24 self-start">
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-200 space-y-6">
+                <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <i className="fas fa-filter text-emerald-600"></i>
+                    Search & Filter Colleges
+                </h3>
                 
-                <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">State</label>
-                    <select className="form-input">
-                        <option>All States</option>
-                        <option>Maharashtra</option>
-                        <option>Karnataka</option>
-                        <option>Delhi</option>
-                        <option>Tamil Nadu</option>
-                    </select>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Search Colleges</label>
+                        <div className="relative">
+                            <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input
+                                type="text"
+                                placeholder="Search by college name..."
+                                value={filters.searchTerm}
+                                onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
+                                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Location</label>
+                        <div className="relative">
+                            <i className="fas fa-map-marker-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input
+                                type="text"
+                                placeholder="City or State..."
+                                value={filters.location}
+                                onChange={(e) => handleFilterChange('location', e.target.value)}
+                                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Course</label>
+                        <div className="relative">
+                            <i className="fas fa-graduation-cap absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input
+                                type="text"
+                                placeholder="Course name..."
+                                value={filters.course}
+                                onChange={(e) => handleFilterChange('course', e.target.value)}
+                                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                            />
+                        </div>
+                    </div>
+                    
+                    <button 
+                        onClick={clearAllFilters}
+                        className="w-full bg-slate-100 text-slate-600 py-2 rounded-lg font-medium hover:bg-slate-200 transition-all duration-300"
+                    >
+                        <i className="fas fa-undo mr-2"></i>
+                        Clear All Filters
+                    </button>
                 </div>
-                
-                <div>
-                    <label className="block text-sm font-semibold text-foreground mb-2">Rating</label>
-                    <select className="form-input">
-                        <option>All Ratings</option>
-                        <option>4.5+ Stars</option>
-                        <option>4.0+ Stars</option>
-                        <option>3.5+ Stars</option>
-                    </select>
-                </div>
-                
-                <button className="btn-primary w-full">
-                    Apply Filters
-                </button>
             </div>
-        </div>
-    </aside>
-);
+        </aside>
+    );
+};
 
 // CollegeCard Component
 interface CollegeCardProps {
@@ -217,103 +187,269 @@ interface CollegeCardProps {
     onShortlistToggle: (id: string) => void;
     onViewDetails?: (college: ICollege) => void;
 }
-const CollegeCard: FC<CollegeCardProps> = ({ college, isShortlisted, onShortlistToggle, onViewDetails }) => (
-    <div className="card-elevated p-6">
-        <div className="flex justify-between items-start">
-            <div className="flex-1">
-                <h4 className="text-lg font-bold text-foreground mb-2">{college.name}</h4>
-                <p className="text-sm text-muted-foreground mb-1">📍 {college.city}, {college.state}</p>
-                <p className="text-sm text-foreground mb-4">
-                    <span className="font-semibold">Key Course:</span> {college.courses?.[0] || 'Various Programs'}
-                </p>
+const CollegeCard: FC<CollegeCardProps> = ({ college, isShortlisted, onShortlistToggle, onViewDetails }) => {
+    const getCollegeLocation = () => {
+        const city = college.city || '';
+        const state = college.state || '';
+        return city && state ? `${city}, ${state}` : city || state || 'Location not specified';
+    };
+
+    const getPrimaryCourse = () => {
+        return college.courses?.[0] || 'Various Programs';
+    };
+
+    const getCollegeImage = () => {
+        // First try coverPhoto, then logo, then fallback to placeholder
+        return college.coverPhoto || college.logo || 'https://images.pexels.com/photos/159490/yale-university-landscape-universities-schools-159490.jpeg?auto=compress&cs=tinysrgb&w=400';
+    };
+
+    const getCollegeLogo = () => {
+        return college.logo || 'https://via.placeholder.com/60x60/10B981/FFFFFF?text=C';
+    };
+
+    return (
+        <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            {/* College Image */}
+            <div className="relative h-48 bg-gradient-to-r from-emerald-500 to-emerald-600">
+                <img 
+                    src={getCollegeImage()}
+                    alt={college.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                        e.currentTarget.src = 'https://images.pexels.com/photos/159490/yale-university-landscape-universities-schools-159490.jpeg?auto=compress&cs=tinysrgb&w=400';
+                    }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                
+                {/* College Logo Overlay */}
+                <div className="absolute top-4 left-4">
+                    <img 
+                        src={getCollegeLogo()}
+                        alt={`${college.name} logo`}
+                        className="w-12 h-12 rounded-lg object-cover border-2 border-white shadow-lg bg-white"
+                        onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/48x48/10B981/FFFFFF?text=C';
+                        }}
+                    />
+                </div>
+                
+                <div className="absolute top-4 right-4">
+                    <span className="px-3 py-1 text-sm font-bold text-white bg-emerald-600/90 backdrop-blur-sm rounded-full border border-white/20">
+                        <i className="fas fa-star text-amber-400 mr-1"></i>
+                        {college.rating || '4.2'}
+                    </span>
+                </div>
             </div>
-            <div className="flex-shrink-0 ml-4">
-                <span className="px-3 py-1 text-sm font-bold text-accent bg-accent/10 rounded-full">
-                    ⭐ {college.rating}
-                </span>
+
+            <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                        <h4 className="text-xl font-bold text-slate-800 mb-2 line-clamp-2">{college.name}</h4>
+                        <p className="text-sm text-slate-600 mb-2 flex items-center gap-1">
+                            <i className="fas fa-map-marker-alt text-emerald-600"></i>
+                            {getCollegeLocation()}
+                        </p>
+                        <p className="text-sm text-slate-700 mb-3">
+                            <span className="font-semibold text-emerald-600">Featured Program:</span> {getPrimaryCourse()}
+                        </p>
+                        {/* Note: Description not available in public API for privacy */}
+                    </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                    <button 
+                        onClick={() => onViewDetails && onViewDetails(college)}
+                        className="flex items-center gap-2 px-4 py-2 text-emerald-600 font-medium hover:bg-emerald-50 rounded-lg transition-all duration-300"
+                    >
+                        <i className="fas fa-info-circle"></i>
+                        View Details
+                    </button>
+                    <button 
+                        onClick={() => onShortlistToggle(college.id)} 
+                        className={`flex items-center gap-2 px-4 py-2 font-semibold rounded-lg transition-all duration-300 ${
+                            isShortlisted 
+                                ? 'bg-amber-100 text-amber-700 border border-amber-300 shadow-sm' 
+                                : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600'
+                        }`}
+                    >
+                        <i className={`fas ${isShortlisted ? 'fa-star' : 'fa-star-o'}`}></i>
+                        {isShortlisted ? 'Shortlisted' : 'Shortlist'}
+                    </button>
+                </div>
             </div>
         </div>
-            <div className="flex justify-between items-center pt-4 border-t border-border">
-            <button className="btn-secondary text-sm" onClick={() => onViewDetails && onViewDetails(college)}>
-                📋 View Details
-            </button>
-            <button 
-                onClick={() => onShortlistToggle(college.id)} 
-                className={`text-sm font-semibold px-4 py-2 rounded-lg transition-all ${
-                    isShortlisted 
-                        ? 'bg-accent text-accent-foreground shadow-md' 
-                        : 'bg-muted text-muted-foreground hover:bg-secondary'
-                }`}
-            >
-                {isShortlisted ? '⭐ Shortlisted' : '☆ Shortlist'}
-            </button>
-        </div>
-    </div>
-);
+    );
+};
 
 // ShortlistedColleges Component
 interface ShortlistedCollegesProps {
     colleges: ICollege[];
     onCompare: () => void;
     onRemove: (id: string) => void;
+    onViewDetails: (college: ICollege) => void;
 }
-const ShortlistedColleges: FC<ShortlistedCollegesProps> = ({ colleges, onCompare, onRemove }) => (
-    <div className="mt-12">
-        <div className="card-elevated p-6 sm:p-8">
-            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-                <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                    <span className="bg-accent/10 p-2 rounded-lg">⭐</span>
-                    Shortlisted Colleges
-                </h2>
-                <button 
-                    onClick={onCompare} 
-                    disabled={colleges.length < 2} 
-                    className="btn-accent text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    ✨ Compare with AI
-                </button>
-            </div>
-            {colleges.length === 0 ? (
-                <div className="text-center py-12">
-                    <p className="text-muted-foreground text-lg">No colleges shortlisted yet.</p>
-                    <p className="text-muted-foreground">Start exploring colleges above!</p>
+const ShortlistedColleges: FC<ShortlistedCollegesProps> = ({ colleges, onCompare, onRemove, onViewDetails }) => {
+    const getCollegeLocation = (college: ICollege) => {
+        const city = college.city || '';
+        const state = college.state || '';
+        return city && state ? `${city}, ${state}` : city || state || 'Location not specified';
+    };
+
+    const getPrimaryCourse = (college: ICollege) => {
+        return college.courses?.[0] || 'Various Programs';
+    };
+
+    return (
+        <div className="mt-12">
+            <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg border border-slate-200">
+                <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                        <span className="bg-amber-100 p-3 rounded-lg">
+                            <i className="fas fa-star text-amber-600 text-xl"></i>
+                        </span>
+                        Your Shortlisted Colleges
+                        <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium">
+                            {colleges.length} Selected
+                        </span>
+                    </h2>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={onCompare} 
+                            disabled={colleges.length < 2} 
+                            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        >
+                            <i className="fas fa-chart-bar"></i>
+                            AI Compare ({colleges.length})
+                        </button>
+                    </div>
                 </div>
-            ) : (
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-border">
-                        <thead className="bg-muted">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">College</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Location</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Course</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Rating</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-card divide-y divide-border">
+                
+                {colleges.length === 0 ? (
+                    <div className="text-center py-16">
+                        <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i className="fas fa-university text-3xl text-slate-400"></i>
+                        </div>
+                        <h3 className="text-xl font-semibold text-slate-700 mb-2">No colleges shortlisted yet</h3>
+                        <p className="text-slate-500 mb-6">Start exploring colleges above and shortlist your favorites for comparison!</p>
+                        <div className="flex items-center justify-center gap-4 text-sm text-slate-400">
+                            <span className="flex items-center gap-1">
+                                <i className="fas fa-lightbulb text-amber-500"></i>
+                                Tip: Shortlist 2+ colleges to compare
+                            </span>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {/* Mobile view - Cards */}
+                        <div className="block md:hidden space-y-4">
                             {colleges.map(college => (
-                                <tr key={college.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{college.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{college.city}, {college.state}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{college.courses?.[0] || 'Various Programs'}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">⭐ {college.rating}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                <div key={college.id} className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <h4 className="font-bold text-slate-800">{college.name}</h4>
                                         <button 
                                             onClick={() => onRemove(college.id)}
-                                            className="text-destructive hover:text-destructive/80"
+                                            className="text-red-500 hover:text-red-700 p-1"
                                         >
-                                            {Icons.delete}
+                                            <i className="fas fa-times"></i>
                                         </button>
-                                    </td>
-                                </tr>
+                                    </div>
+                                    <p className="text-sm text-slate-600 mb-2">
+                                        <i className="fas fa-map-marker-alt text-emerald-600 mr-1"></i>
+                                        {getCollegeLocation(college)}
+                                    </p>
+                                    <p className="text-sm text-slate-600 mb-3">
+                                        <i className="fas fa-graduation-cap text-emerald-600 mr-1"></i>
+                                        {getPrimaryCourse(college)}
+                                    </p>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-medium text-amber-600">
+                                            <i className="fas fa-star mr-1"></i>
+                                            {college.rating || '4.2'}
+                                        </span>
+                                        <button 
+                                            onClick={() => onViewDetails && onViewDetails(college)}
+                                            className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+                                        >
+                                            View Details →
+                                        </button>
+                                    </div>
+                                </div>
                             ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+                        </div>
+
+                        {/* Desktop view - Table */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="min-w-full divide-y divide-slate-200">
+                                <thead className="bg-slate-50">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">College</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Location</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Primary Course</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Rating</th>
+                                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-slate-200">
+                                    {colleges.map(college => (
+                                        <tr key={college.id} className="hover:bg-slate-50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-3">
+                                                    <img 
+                                                        src={college.logo || 'https://via.placeholder.com/40x40/10B981/FFFFFF?text=C'}
+                                                        alt={college.name}
+                                                        className="w-10 h-10 rounded-lg object-cover border border-slate-200"
+                                                        onError={(e) => {
+                                                            e.currentTarget.src = 'https://via.placeholder.com/40x40/10B981/FFFFFF?text=C';
+                                                        }}
+                                                    />
+                                                    <div>
+                                                        <div className="text-sm font-medium text-slate-800">{college.name}</div>
+                                                        {college.email && (
+                                                            <div className="text-xs text-slate-500">{college.email}</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                                <i className="fas fa-map-marker-alt text-emerald-600 mr-1"></i>
+                                                {getCollegeLocation(college)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{getPrimaryCourse(college)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                                <span className="flex items-center gap-1">
+                                                    <i className="fas fa-star text-amber-500"></i>
+                                                    {college.rating || '4.2'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <button 
+                                                        onClick={() => onViewDetails && onViewDetails(college)}
+                                                        className="text-emerald-600 hover:text-emerald-700 p-2 hover:bg-emerald-50 rounded-lg transition-all"
+                                                        title="View Details"
+                                                    >
+                                                        <i className="fas fa-eye"></i>
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => onRemove(college.id)}
+                                                        className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-all"
+                                                        title="Remove from Shortlist"
+                                                    >
+                                                        <i className="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 // GeminiModal Component
 interface GeminiModalProps {
@@ -326,23 +462,54 @@ interface GeminiModalProps {
 const GeminiModal: FC<GeminiModalProps> = ({ isOpen, title, content, isLoading, onClose }) => {
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 bg-foreground/60 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
-            <div className="relative top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-5 border border-border w-full max-w-2xl shadow-xl rounded-xl bg-card">
-                <div className="mt-3">
-                    <div className="flex justify-between items-center mb-4 pb-4 border-b border-border">
-                        <h3 className="text-xl leading-6 font-bold text-foreground">✨ {title}</h3>
-                        <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
-                            {Icons.close}
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+            <div className="relative bg-white w-full max-w-4xl max-h-[80vh] shadow-2xl rounded-xl border border-slate-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 p-6">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <i className="fas fa-robot"></i>
+                            {title}
+                        </h3>
+                        <button 
+                            onClick={onClose} 
+                            className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+                        >
+                            <i className="fas fa-times text-xl"></i>
                         </button>
                     </div>
-                    <div className="mt-2 px-2 py-3 text-sm text-foreground max-h-[60vh] overflow-y-auto">
-                        {isLoading ? (
-                            <div className="flex justify-center items-center h-48">
-                                <div className="loader"></div>
-                            </div>
-                        ) : (
-                            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: content }} />
-                        )}
+                </div>
+                <div className="p-6 overflow-y-auto max-h-[60vh]">
+                    {isLoading ? (
+                        <div className="flex flex-col justify-center items-center h-48">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mb-4"></div>
+                            <p className="text-slate-600">Our AI is analyzing and comparing your shortlisted colleges...</p>
+                            <p className="text-sm text-slate-500 mt-2">This may take a few moments</p>
+                        </div>
+                    ) : (
+                        <div className="prose max-w-none">
+                            <div 
+                                className="text-slate-700 leading-relaxed"
+                                dangerouslySetInnerHTML={{ 
+                                    __html: content.replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-700">$1</strong>')
+                                        .replace(/\n/g, '<br>')
+                                        .replace(/•/g, '<span class="text-emerald-600">•</span>')
+                                }} 
+                            />
+                        </div>
+                    )}
+                </div>
+                <div className="bg-slate-50 px-6 py-4 border-t border-slate-200">
+                    <div className="flex justify-between items-center">
+                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                            <i className="fas fa-info-circle text-emerald-600"></i>
+                            Powered by AI • CollegeManzil Expert Analysis
+                        </p>
+                        <button 
+                            onClick={onClose}
+                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                        >
+                            Close
+                        </button>
                     </div>
                 </div>
             </div>
@@ -352,7 +519,7 @@ const GeminiModal: FC<GeminiModalProps> = ({ isOpen, title, content, isLoading, 
 
 // --- MAIN APP COMPONENT ---
 const CollegeAdmissionApp: FC = () => {
-    const navigate = useNavigate();
+    const { server } = useMainContext();
     const [colleges, setColleges] = useState<ICollege[]>([]);
     const [shortlisted, setShortlisted] = useState<string[]>([]); // college ids
     const [shortlistLoading, setShortlistLoading] = useState(false);
@@ -361,19 +528,59 @@ const CollegeAdmissionApp: FC = () => {
     const [modalTitle, setModalTitle] = useState('');
     const [modalContent, setModalContent] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [collegesLoading, setCollegesLoading] = useState(true);
+    const [selectedCollege, setSelectedCollege] = useState<ICollege | null>(null);
+    const [showCollegeDetails, setShowCollegeDetails] = useState(false);
+    
+    // Search and filter states
+    const [searchFilters, setSearchFilters] = useState({
+        searchTerm: '',
+        location: '',
+        course: ''
+    });
+
+    // Function to fetch colleges with search parameters
+    const fetchColleges = useCallback(async (filters = searchFilters) => {
+        try {
+            setCollegesLoading(true);
+            
+            // Build query parameters
+            const queryParams = new URLSearchParams();
+            if (filters.searchTerm.trim()) {
+                queryParams.append('search', filters.searchTerm.trim());
+            }
+            if (filters.location.trim()) {
+                queryParams.append('location', filters.location.trim());
+            }
+            if (filters.course.trim()) {
+                queryParams.append('course', filters.course.trim());
+            }
+            
+            // Fetch from public colleges endpoint which doesn't require authentication
+            const url = `${server}/api/colleges${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Failed to fetch colleges');
+            const body = await res.json();
+            setColleges(body.data || []);
+        } catch (err) {
+            console.error('Error loading colleges', err);
+        } finally {
+            setCollegesLoading(false);
+        }
+    }, [searchFilters, server]);
 
     useEffect(() => {
-        (async () => {
-            try {
-                const res = await fetch('/api/colleges');
-                if (!res.ok) throw new Error('Failed to fetch colleges');
-                const body = await res.json();
-                setColleges(body.data || []);
-            } catch (err) {
-                console.error('Error loading colleges', err);
-            }
-        })();
-    }, []);
+        fetchColleges();
+    }, [fetchColleges]);
+
+    // Refetch colleges when search filters change
+    useEffect(() => {
+        const debounceTimeout = setTimeout(() => {
+            fetchColleges(searchFilters);
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(debounceTimeout);
+    }, [searchFilters, fetchColleges]);
 
     // Fetch shortlisted colleges from backend
     useEffect(() => {
@@ -382,7 +589,7 @@ const CollegeAdmissionApp: FC = () => {
             setShortlistError(undefined);
             try {
                 const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-                const res = await fetch('/api/shortlists', {
+                const res = await fetch(`${server}/api/shortlists`, {
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
                 });
                 if (res.status === 401) throw new Error('Not authenticated');
@@ -403,22 +610,48 @@ const CollegeAdmissionApp: FC = () => {
             }
         };
         loadShortlist();
-    }, []);
+    }, [server]);
 
     const handleCompareColleges = async () => {
-        setIsModalOpen(true);
-        setIsLoading(true);
-        setModalTitle('AI College Comparison');
-        const collegeNames = colleges.filter(c => shortlisted.includes(c.id)).map(c => c.name).join(' and ');
-        if (!collegeNames) {
-            setModalContent('Please shortlist at least two colleges for comparison.');
-            setIsLoading(false);
+        const shortlistedColleges = colleges.filter(c => shortlisted.includes(c.id));
+        if (shortlistedColleges.length < 2) {
+            alert('Please shortlist at least 2 colleges for comparison');
             return;
         }
-        const prompt = `Provide a detailed comparison between ${collegeNames}. Compare them on: **Key Programs**, **Campus Life**, **Placement Statistics**, and **Notable Alumni**. Use bullet points.`;
+
+        setIsModalOpen(true);
+        setIsLoading(true);
+        setModalTitle('AI-Powered College Comparison');
+        
+        const collegeDetails = shortlistedColleges.map(c => {
+            const location = c.city && c.state 
+                ? `${c.city}, ${c.state}` 
+                : 'Location not specified';
+            const courses = c.courses?.join(', ') || 'Various Programs';
+            return `${c.name} (Located in ${location}, offering ${courses})`;
+        }).join(' vs ');
+        
+        const prompt = `As an expert education counsellor, provide a detailed comparison between these colleges: ${collegeDetails}. 
+
+        Please structure your response with the following sections:
+        **🎓 Academic Excellence & Programs**
+        **🏛️ Campus Infrastructure & Facilities** 
+        **💼 Placement & Career Opportunities**
+        **🌟 Unique Strengths & Specializations**
+        **💰 Fee Structure & Value for Money**
+        **📍 Location & Connectivity**
+        **🏆 Final Recommendation**
+
+        Make it comprehensive yet easy to understand for students. Use bullet points where appropriate and provide actionable insights.`;
+        
         const response = await callGeminiAPI(prompt);
-        setModalContent(response.replace(/\n/g, '<br>'));
+        setModalContent(response);
         setIsLoading(false);
+    };
+
+    const handleViewCollegeDetails = (college: ICollege) => {
+        setSelectedCollege(college);
+        setShowCollegeDetails(true);
     };
 
     const handleShortlistToggle = (id: string) => {
@@ -426,7 +659,7 @@ const CollegeAdmissionApp: FC = () => {
         (async () => {
             try {
                 const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-                const res = await fetch('/api/shortlists/toggle', {
+                const res = await fetch(`${server}/api/shortlists/toggle`, {
                     method: 'POST',
                     headers: token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ collegeId: id })
@@ -449,7 +682,7 @@ const CollegeAdmissionApp: FC = () => {
         (async () => {
             try {
                 const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-                const res = await fetch(`/api/shortlists/${id}`, {
+                const res = await fetch(`${server}/api/shortlists/${id}`, {
                     method: 'DELETE',
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
                 });
@@ -463,43 +696,120 @@ const CollegeAdmissionApp: FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
             <Header />
             <main className="pt-24">
+                {/* Hero Banner */}
+                <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white py-16">
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="text-center max-w-4xl mx-auto">
+                            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                                Discover Your Perfect College Match
+                            </h1>
+                            <p className="text-xl opacity-90 mb-6">
+                                Explore 1000+ verified colleges across India with expert guidance and AI-powered recommendations
+                            </p>
+                            <div className="flex flex-wrap justify-center gap-6 text-sm">
+                                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                                    <i className="fas fa-university text-amber-300"></i>
+                                    <span>1000+ Colleges</span>
+                                </div>
+                                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                                    <i className="fas fa-user-tie text-amber-300"></i>
+                                    <span>Expert Counsellors</span>
+                                </div>
+                                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                                    <i className="fas fa-robot text-amber-300"></i>
+                                    <span>AI-Powered Matching</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="flex flex-col lg:flex-row gap-8">
-                        <CollegeSearchFilters />
+                        <CollegeSearchFilters 
+                            filters={searchFilters}
+                            onFiltersChange={setSearchFilters}
+                        />
                         <div className="w-full lg:w-3/4">
                             <div className="space-y-6">
-                                <div className="mb-6">
-                                    <h2 className="text-2xl font-bold text-foreground mb-2">🏛️ Available Colleges</h2>
-                                    <p className="text-muted-foreground">Discover your perfect college match from our comprehensive database</p>
+                                <div className="flex justify-between items-center mb-6">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                            <i className="fas fa-university text-emerald-600"></i>
+                                            Available Colleges
+                                        </h2>
+                                        <p className="text-slate-600">Discover your perfect college match from our comprehensive database of verified institutions</p>
+                                    </div>
+                                    <div className="text-sm text-slate-500 bg-white px-4 py-2 rounded-lg border border-slate-200">
+                                        <i className="fas fa-info-circle text-emerald-600 mr-1"></i>
+                                        {colleges.length} colleges found
+                                    </div>
                                 </div>
-                                {colleges.map(college => (
-                                    <CollegeCard
-                                        key={college.id}
-                                        college={college}
-                                        isShortlisted={shortlisted.includes(college.id)}
-                                        onShortlistToggle={handleShortlistToggle}
-                                        onViewDetails={(c) => navigate(`/colleges/${c.id}`)}
-                                    />
-                                ))}
-                                                {shortlistLoading && (
-                                                    <p className="text-sm text-muted-foreground">Loading shortlist...</p>
-                                                )}
-                                                {shortlistError && (
-                                                    <p className="text-sm text-destructive">{shortlistError}</p>
-                                                )}
+
+                                {collegesLoading ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {[1, 2, 3, 4].map(i => (
+                                            <div key={i} className="bg-white rounded-xl p-6 shadow-lg animate-pulse">
+                                                <div className="h-32 bg-slate-200 rounded-lg mb-4"></div>
+                                                <div className="h-4 bg-slate-200 rounded mb-2"></div>
+                                                <div className="h-3 bg-slate-200 rounded mb-2 w-3/4"></div>
+                                                <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : colleges.length === 0 ? (
+                                    <div className="text-center py-16 bg-white rounded-xl shadow-lg">
+                                        <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                            <i className="fas fa-search text-3xl text-slate-400"></i>
+                                        </div>
+                                        <h3 className="text-xl font-semibold text-slate-700 mb-2">No colleges found</h3>
+                                        <p className="text-slate-500">Try adjusting your filters or search terms</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {colleges.map(college => (
+                                            <CollegeCard
+                                                key={college.id}
+                                                college={college}
+                                                isShortlisted={shortlisted.includes(college.id)}
+                                                onShortlistToggle={handleShortlistToggle}
+                                                onViewDetails={handleViewCollegeDetails}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+
+                                {shortlistLoading && (
+                                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                                        <p className="text-sm text-emerald-700 flex items-center gap-2">
+                                            <i className="fas fa-spinner fa-spin"></i>
+                                            Loading your shortlist...
+                                        </p>
+                                    </div>
+                                )}
+                                {shortlistError && (
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                        <p className="text-sm text-red-700 flex items-center gap-2">
+                                            <i className="fas fa-exclamation-triangle"></i>
+                                            {shortlistError}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                             <ShortlistedColleges
                                 colleges={colleges.filter(c => shortlisted.includes(c.id))}
                                 onCompare={handleCompareColleges}
                                 onRemove={handleRemoveShortlisted}
+                                onViewDetails={handleViewCollegeDetails}
                             />
                         </div>
                     </div>
                 </div>
             </main>
+            
             <GeminiModal
                 isOpen={isModalOpen}
                 title={modalTitle}
@@ -507,6 +817,50 @@ const CollegeAdmissionApp: FC = () => {
                 isLoading={isLoading}
                 onClose={() => setIsModalOpen(false)}
             />
+
+            {/* College Details Modal */}
+            {showCollegeDetails && selectedCollege && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+                    <div className="relative bg-white w-full max-w-4xl max-h-[90vh] shadow-2xl rounded-xl border border-slate-200 overflow-hidden">
+                        <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 p-6">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <i className="fas fa-university"></i>
+                                    {selectedCollege.name}
+                                </h3>
+                                <button 
+                                    onClick={() => setShowCollegeDetails(false)} 
+                                    className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+                                >
+                                    <i className="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="p-6 overflow-y-auto max-h-[70vh]">
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 className="text-lg font-bold text-slate-800 mb-3">College Information</h4>
+                                    <div className="space-y-3 text-sm">
+                                        <p><strong>Location:</strong> {selectedCollege.city}, {selectedCollege.state}</p>
+                                        <p><strong>Contact:</strong> {selectedCollege.contactNumber}</p>
+                                        <p><strong>Email:</strong> {selectedCollege.email}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="text-lg font-bold text-slate-800 mb-3">Available Courses</h4>
+                                    <div className="space-y-2">
+                                        {selectedCollege.courses?.map((courseName, index) => (
+                                            <div key={index} className="bg-slate-50 p-3 rounded-lg">
+                                                <h5 className="font-semibold text-slate-700">{courseName}</h5>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

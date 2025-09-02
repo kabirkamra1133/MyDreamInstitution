@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, FC } from 'react';
+import { useMainContext } from '../context/mainContext';
 import { 
   Building2, 
   Users, 
@@ -16,12 +17,14 @@ import {
   Calendar,
   Shield,
   CheckCircle2,
-  AlertCircle,
+  Clock,
   Loader2,
   ListOrdered,
   RefreshCw,
   ChevronDown,
   ChevronRight,
+  Eye,
+  Send,
   Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -32,17 +35,20 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCollege } from '@/context/collegeContext';
+import { useToast } from '@/hooks/use-toast';
 
 // --- TYPE DEFINITIONS ---
 interface College {
     instituteCode?: string;
-    password : string,
-    name: string;
-    courses: string[];
-    address: string;
-    state: string;
-    email: string;
-    phone: string;
+    password?: string;
+    name?: string;
+    courses?: string[];
+    address?: string;
+    state?: string;
+    email?: string;
+    phone?: string;
+    _id?: string;
+    [key: string]: unknown; // Allow additional properties from backend
 }
 
 interface BackendUser {
@@ -67,11 +73,6 @@ interface CourseSelection {
     addedAt?: string;
 }
 
-interface CollegeRegistrationData {
-    instituteCode : string,
-    email: string;
-    password: string
-}
 
 interface Student {
     id: string;
@@ -101,9 +102,9 @@ interface ShortlistStat { collegeAdminId: string; name: string; email?: string; 
 interface ShortlistedStudent { id: string; firstName: string; lastName: string; email: string; education: string; shortlistedAt: string; }
 
 const initialStudentsData: Student[] = [
-    { id: 'STU001', name: 'Alice Johnson', mainCourse: 'Computer Science', subCourse: 'AI/ML', collegesSelected: ['Global Tech Institute', 'Pioneer Engineering College'], collegeFinalized: 'Global Tech Institute', coursesSelected: ['Computer Science', 'Data Science'], courseFinalized: 'Computer Science', counselor: 'John Doe' },
-    { id: 'STU002', name: 'Bob Williams', mainCourse: 'Fine Arts', subCourse: 'Painting', collegesSelected: ['National Arts University'], collegeFinalized: '', coursesSelected: ['Fine Arts', 'Graphic Design'], courseFinalized: '', counselor: 'Jane Smith' },
-    { id: 'STU003', name: 'Charlie Brown', mainCourse: 'MBA', subCourse: 'Marketing', collegesSelected: ['Evergreen Business School'], collegeFinalized: 'Evergreen Business School', coursesSelected: ['MBA'], courseFinalized: 'MBA', counselor: 'John Doe' },
+    { id: 'STU001', name: 'Alice Johnson', email: 'alice@example.com', mainCourse: 'Computer Science', subCourse: 'AI/ML', collegesSelected: ['Global Tech Institute', 'Pioneer Engineering College'], collegeFinalized: 'Global Tech Institute', coursesSelected: ['Computer Science', 'Data Science'], courseFinalized: 'Computer Science', counselor: 'John Doe' },
+    { id: 'STU002', name: 'Bob Williams', email: 'bob@example.com', mainCourse: 'Fine Arts', subCourse: 'Painting', collegesSelected: ['National Arts University'], collegeFinalized: '', coursesSelected: ['Fine Arts', 'Graphic Design'], courseFinalized: '', counselor: 'Jane Smith' },
+    { id: 'STU003', name: 'Charlie Brown', email: 'charlie@example.com', mainCourse: 'MBA', subCourse: 'Marketing', collegesSelected: ['Evergreen Business School'], collegeFinalized: 'Evergreen Business School', coursesSelected: ['MBA'], courseFinalized: 'MBA', counselor: 'John Doe' },
 ];
 
 const admittedData: AdmittedStudent[] = [
@@ -131,13 +132,14 @@ const ForwardStudentModal: FC<ForwardStudentModalProps> = ({ student, onClose })
     const [colleges, setColleges] = useState<{_id: string, name: string}[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const {server} = useMainContext();
 
     // Fetch available colleges for forwarding
     useEffect(() => {
         const fetchColleges = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/college-admins', {
+                const response = await fetch(`${server}/api/college-admins`, {
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                 });
                 if (response.ok) {
@@ -149,7 +151,7 @@ const ForwardStudentModal: FC<ForwardStudentModalProps> = ({ student, onClose })
             }
         };
         fetchColleges();
-    }, []);
+    }, [server]);
 
     const handleForward = async () => {
         if (!student || !selectedCollege) {
@@ -162,7 +164,7 @@ const ForwardStudentModal: FC<ForwardStudentModalProps> = ({ student, onClose })
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/users/forward', {
+            const response = await fetch(`${server}/api/users/forward`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -304,6 +306,7 @@ interface StudentDetailsModalProps {
 }
 
 const StudentDetailsModal: FC<StudentDetailsModalProps> = ({ studentId, initialName, onClose }) => {
+    const { server } = useMainContext();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [items, setItems] = useState<CourseSelection[]>([]);
@@ -333,14 +336,14 @@ const StudentDetailsModal: FC<StudentDetailsModalProps> = ({ studentId, initialN
                 const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
                 
                 // Get complete student info from new endpoint
-                const userRes = await fetch(`/api/users/student/${encodeURIComponent(studentId)}/info`, { 
+                const userRes = await fetch(`${server}/api/users/student/${encodeURIComponent(studentId)}/info`, { 
                     headers: token ? { Authorization: `Bearer ${token}` } : {} 
                 });
                 if (!userRes.ok) throw new Error('Failed to load student info');
                 const userResponse = await userRes.json();
                 
                 // Get student's course selections
-                const detailsRes = await fetch(`/api/users/student/${encodeURIComponent(studentId)}/details`, { 
+                const detailsRes = await fetch(`${server}/api/users/student/${encodeURIComponent(studentId)}/details`, { 
                     headers: token ? { Authorization: `Bearer ${token}` } : {} 
                 });
                 let courseSelections = [];
@@ -359,7 +362,7 @@ const StudentDetailsModal: FC<StudentDetailsModalProps> = ({ studentId, initialN
             } finally { if (mounted) setLoading(false); }
         })();
         return () => { mounted = false; };
-    }, [studentId, initialName]);
+    }, [studentId, initialName, server]);
 
     if (!studentId) return null;
 
@@ -475,6 +478,7 @@ const StudentDetailsModal: FC<StudentDetailsModalProps> = ({ studentId, initialN
 // --- TAB COMPONENTS ---
 const CollegesTab: FC<{ onListChange?: (count: number) => void }> = ({ onListChange }) => {
     const {saveCollegeData,getRegisteredColleges} = useCollege();
+    const { toast } = useToast();
     const [colleges, setColleges] = useState<College[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -532,9 +536,16 @@ const CollegesTab: FC<{ onListChange?: (count: number) => void }> = ({ onListCha
                 state: '',
                 courses: []
             });
-            alert('College added successfully!');
+            toast({
+                title: "College Added Successfully! 🎉",
+                description: `${newCollege.name} has been added to the partner network`,
+            });
         } else {
-            alert('Please fill in required fields: Name, Email, and Phone');
+            toast({
+                title: "Missing Required Fields",
+                description: "Please fill in required fields: Name, Email, and Phone",
+                variant: "destructive",
+            });
         }
     };
 
@@ -583,13 +594,13 @@ const CollegesTab: FC<{ onListChange?: (count: number) => void }> = ({ onListCha
 
     return (
         <div className="space-y-6">
-            <Card className="shadow-card">
-                <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10">
-                    <CardTitle className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                            <Building2 className="w-6 h-6 text-primary" />
+            <Card className="shadow-xl border-emerald-100">
+                <CardHeader className="border-b bg-gradient-to-r from-emerald-500/10 to-emerald-600/15">
+                    <CardTitle className="flex items-center gap-3 text-emerald-700">
+                        <div className="p-2 bg-emerald-500/10 rounded-lg">
+                            <Building2 className="w-6 h-6 text-emerald-600" />
                         </div>
-                        Add New College
+                        Add New Partner College
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -629,23 +640,29 @@ const CollegesTab: FC<{ onListChange?: (count: number) => void }> = ({ onListCha
                             value={newCollege.password}
                             onChange={(e) => setNewCollege({...newCollege, password: e.target.value})}
                         />
-                        <Button type="submit" className="md:col-span-2 lg:col-span-4 h-11 bg-gradient-primary hover:opacity-90 transition-opacity">
+                        <Button type="submit" className="md:col-span-2 lg:col-span-4 h-11 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold shadow-lg transition-all duration-300 hover:-translate-y-0.5">
                             <Building2 className="w-4 h-4 mr-2" />
-                            Add College
+                            Add Partner College
                         </Button>
                     </form>
                 </CardContent>
             </Card>
 
-            <Card className="shadow-card">
-                <CardHeader className="border-b">
+            <Card className="shadow-xl border-emerald-100">
+                <CardHeader className="border-b bg-gradient-to-r from-emerald-500/10 to-emerald-600/15">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                            <School className="w-6 h-6 text-primary" />
+                        <div className="p-2 bg-emerald-500/10 rounded-lg">
+                            <School className="w-6 h-6 text-emerald-600" />
                         </div>
-                        <CardTitle className="flex items-center gap-3">College Listings</CardTitle>
-                        <Badge variant="secondary" className="ml-auto">{colleges.length} Colleges</Badge>
-                        <Button variant="ghost" size="sm" className="ml-3" onClick={fetchColleges} title="Refresh colleges">
+                        <CardTitle className="flex items-center gap-3 text-emerald-700">College Directory</CardTitle>
+                        <Badge variant="secondary" className="ml-auto bg-emerald-100 text-emerald-700 border-emerald-200">{colleges.length} Colleges</Badge>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="ml-3 hover:bg-emerald-50 text-emerald-600" 
+                            onClick={fetchColleges} 
+                            title="Refresh colleges"
+                        >
                             <RefreshCw className="w-4 h-4" />
                         </Button>
                     </div>
@@ -747,6 +764,7 @@ const CollegesTab: FC<{ onListChange?: (count: number) => void }> = ({ onListCha
 };
 
 const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onForwardProfile }) => {
+    const {server} = useMainContext();
     const [students, setStudents] = useState<Student[]>([]);
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [selectedStudentName, setSelectedStudentName] = useState<string | undefined>(undefined);
@@ -762,7 +780,7 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
         const fetchStudents = async () => {
             setLoading(true); setError(null);
             try {
-                const response = await fetch('/api/users', {
+                const response = await fetch(`${server}/api/users`, {
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                 });
                 
@@ -793,12 +811,12 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
         };
         fetchStudents();
         return () => { mounted = false; };
-    }, [token]);
+    }, [token, server]);
 
     const fetchStudentDetails = async (studentId: string) => {
         try {
             setLoadingDetails(prev => new Set(prev).add(studentId));
-            const response = await fetch(`/api/users/student/${studentId}/details`, {
+            const response = await fetch(`${server}/api/users/student/${studentId}/details`, {
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             if (response.ok) {
@@ -841,7 +859,7 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
 
     const handleFinalize = async (studentId: string, field: 'college' | 'course', value: string) => {
         try {
-            const response = await fetch(`/api/users/${studentId}/finalize`, {
+            const response = await fetch(`${server}/api/users/${studentId}/finalize`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -866,15 +884,15 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
     };
 
     return (
-        <Card className="shadow-card">
-            <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10">
-                <CardTitle className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                        <Users className="w-6 h-6 text-primary" />
+        <Card className="shadow-xl border-emerald-100">
+            <CardHeader className="border-b bg-gradient-to-r from-emerald-500/10 to-emerald-600/15">
+                <CardTitle className="flex items-center gap-3 text-emerald-700">
+                    <div className="p-2 bg-emerald-500/10 rounded-lg">
+                        <Users className="w-6 h-6 text-emerald-600" />
                     </div>
-                    Student Leads
-                    <Badge variant="secondary" className="ml-auto">
-                        {students.length} Active Leads
+                    Student Management Dashboard
+                    <Badge variant="secondary" className="ml-auto bg-emerald-100 text-emerald-700 border-emerald-200">
+                        {students.length} Active Students
                     </Badge>
                 </CardTitle>
             </CardHeader>
@@ -882,57 +900,63 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
                 {loading ? <div className="p-6"><Spinner /></div> : error ? <div className="p-6 text-center text-destructive">{error}</div> : (
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-muted/50">
-                            <TableHead className="font-semibold w-12">Expand</TableHead>
-                            <TableHead className="font-semibold">Student Details</TableHead>
-                            <TableHead className="font-semibold">Colleges Selected</TableHead>
-                            <TableHead className="font-semibold">College Finalized</TableHead>
-                            <TableHead className="font-semibold">Courses Selected</TableHead>
-                            <TableHead className="font-semibold">Course Finalized</TableHead>
-                            <TableHead className="text-center font-semibold">Action</TableHead>
+                        <TableRow className="bg-emerald-50/50">
+                            <TableHead className="font-semibold w-12 text-emerald-700">Expand</TableHead>
+                            <TableHead className="font-semibold text-emerald-700">Student Details</TableHead>
+                            <TableHead className="font-semibold text-emerald-700">Colleges Selected</TableHead>
+                            <TableHead className="font-semibold text-emerald-700">College Finalized</TableHead>
+                            <TableHead className="font-semibold text-emerald-700">Courses Selected</TableHead>
+                            <TableHead className="font-semibold text-emerald-700">Course Finalized</TableHead>
+                            <TableHead className="text-center font-semibold text-emerald-700">Action</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {students.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={7} className="text-center py-8">
-                                    <p className="text-muted-foreground">No students found</p>
+                                    <div className="flex flex-col items-center gap-3">
+                                        <Users className="w-12 h-12 text-emerald-400" />
+                                        <div>
+                                            <h3 className="font-semibold text-emerald-600">No students found</h3>
+                                            <p className="text-sm text-slate-500">Students will appear here once they register on the platform</p>
+                                        </div>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ) : (
                             students.map(student => (
                                 <React.Fragment key={student.id}>
-                                    <TableRow className="hover:bg-muted/25 transition-colors">
+                                    <TableRow className="hover:bg-emerald-50/50 transition-colors">
                                         <TableCell>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => toggleStudentExpansion(student.id)}
                                                 disabled={loadingDetails.has(student.id)}
-                                                className="p-1 h-8 w-8"
+                                                className="p-1 h-8 w-8 hover:bg-emerald-100"
                                             >
                                                 {loadingDetails.has(student.id) ? (
-                                                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                                    <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
                                                 ) : expandedStudents.has(student.id) ? (
-                                                    <ChevronDown className="w-4 h-4" />
+                                                    <ChevronDown className="w-4 h-4 text-emerald-600" />
                                                 ) : (
-                                                    <ChevronRight className="w-4 h-4" />
+                                                    <ChevronRight className="w-4 h-4 text-emerald-600" />
                                                 )}
                                             </Button>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-primary/10 rounded-full">
-                                                    <User className="w-4 h-4 text-primary" />
+                                                <div className="p-2 bg-emerald-100 rounded-lg">
+                                                    <User className="w-4 h-4 text-emerald-600" />
                                                 </div>
                                                 <div>
-                                                    <button className="font-semibold text-foreground text-left" onClick={() => { setSelectedStudentId(student.id); setSelectedStudentName(student.name); }}>
+                                                    <button className="font-semibold text-slate-800 text-left hover:text-emerald-600 transition-colors" onClick={() => { setSelectedStudentId(student.id); setSelectedStudentName(student.name); }}>
                                                         {student.name}
                                                     </button>
-                                                    <div className="text-sm text-muted-foreground">
+                                                    <div className="text-sm text-slate-600">
                                                         {student.mainCourse} • {student.counselor}
                                                     </div>
-                                                    <Badge variant="outline" className="text-xs mt-1">{student.id}</Badge>
+                                                    <Badge variant="outline" className="text-xs mt-1 bg-emerald-50 text-emerald-700 border-emerald-200">{student.id}</Badge>
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -942,25 +966,25 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
                                                     <Badge 
                                                         key={college} 
                                                         variant="outline" 
-                                                        className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs"
+                                                        className="cursor-pointer hover:bg-emerald-600 hover:text-white transition-colors text-xs bg-emerald-50 text-emerald-700 border-emerald-200"
                                                         onClick={() => handleFinalize(student.id, 'college', college)}
                                                     >
                                                         {college}
                                                     </Badge>
                                                 )) : (
-                                                    <span className="text-xs text-muted-foreground">Click expand to see selections</span>
+                                                    <span className="text-xs text-slate-500">Click expand to see selections</span>
                                                 )}
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             {student.collegeFinalized ? (
-                                                <Badge className="bg-success text-success-foreground">
+                                                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">
                                                     <CheckCircle2 className="w-3 h-3 mr-1" />
                                                     {student.collegeFinalized}
                                                 </Badge>
                                             ) : (
-                                                <Badge variant="outline" className="text-muted-foreground">
-                                                    <AlertCircle className="w-3 h-3 mr-1" />
+                                                <Badge variant="outline" className="text-slate-500 border-slate-300">
+                                                    <Clock className="w-3 h-3 mr-1" />
                                                     Pending
                                                 </Badge>
                                             )}
@@ -971,25 +995,25 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
                                                     <Badge 
                                                         key={course} 
                                                         variant="outline" 
-                                                        className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors text-xs"
+                                                        className="cursor-pointer hover:bg-emerald-600 hover:text-white transition-colors text-xs bg-emerald-50 text-emerald-700 border-emerald-200"
                                                         onClick={() => handleFinalize(student.id, 'course', course)}
                                                     >
                                                         {course}
                                                     </Badge>
                                                 )) : (
-                                                    <span className="text-xs text-muted-foreground">Click expand to see selections</span>
+                                                    <span className="text-xs text-slate-500">Click expand to see selections</span>
                                                 )}
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             {student.courseFinalized ? (
-                                                <Badge className="bg-success text-success-foreground">
+                                                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">
                                                     <CheckCircle2 className="w-3 h-3 mr-1" />
                                                     {student.courseFinalized}
                                                 </Badge>
                                             ) : (
-                                                <Badge variant="outline" className="text-muted-foreground">
-                                                    <AlertCircle className="w-3 h-3 mr-1" />
+                                                <Badge variant="outline" className="text-slate-500 border-slate-300">
+                                                    <Clock className="w-3 h-3 mr-1" />
                                                     Pending
                                                 </Badge>
                                             )}
@@ -999,16 +1023,17 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
                                                 <Button size="sm" variant="outline" onClick={() => { 
                                                     setSelectedStudentId(student.id); 
                                                     setSelectedStudentName(student.name);
-                                                }}>
+                                                }} className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                                                    <Eye className="w-4 h-4 mr-1" />
                                                     Info
                                                 </Button>
                                                 <Button 
                                                     onClick={() => onForwardProfile(student)} 
                                                     size="sm"
-                                                    className="bg-gradient-to-r from-primary to-primary/80"
+                                                    className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white"
                                                     disabled={!student.collegeFinalized || !student.courseFinalized}
                                                 >
-                                                    <Sparkles className="w-4 h-4 mr-1" />
+                                                    <Send className="w-4 h-4 mr-1" />
                                                     Forward
                                                 </Button>
                                             </div>
@@ -1017,44 +1042,44 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
                                     
                                     {/* Expanded row showing detailed course selections */}
                                     {expandedStudents.has(student.id) && (
-                                        <TableRow>
-                                            <TableCell colSpan={7} className="bg-gradient-to-r from-primary/5 to-primary/10 border-t">
-                                                <div className="p-4">
-                                                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-primary">
+                                        <TableRow className="bg-emerald-50/30">
+                                            <TableCell colSpan={7} className="p-4 border-t border-emerald-200">
+                                                <div className="space-y-4">
+                                                    <h4 className="font-semibold mb-3 flex items-center gap-2 text-emerald-700">
                                                         <BookOpen className="w-4 h-4" />
                                                         Detailed Course Selections & Applications
                                                     </h4>
                                                     {loadingDetails.has(student.id) ? (
                                                         <div className="text-center py-4">
-                                                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                                                            <p className="text-sm text-muted-foreground">Loading course details...</p>
+                                                            <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                                                            <p className="text-sm text-emerald-600">Loading course details...</p>
                                                         </div>
                                                     ) : !student.courseSelections ? (
                                                         <div className="text-center py-4">
-                                                            <p className="text-muted-foreground">Click to load detailed course selections...</p>
+                                                            <p className="text-slate-500">Click to load detailed course selections...</p>
                                                         </div>
                                                     ) : student.courseSelections.length === 0 ? (
                                                         <div className="text-center py-4">
-                                                            <p className="text-muted-foreground">This student hasn't applied to any colleges yet.</p>
+                                                            <p className="text-slate-500">This student hasn't applied to any colleges yet.</p>
                                                         </div>
                                                     ) : (
                                                         <div className="grid gap-3">
                                                             {student.courseSelections.map((selection, index) => (
-                                                                <div key={index} className="border rounded-lg p-4 bg-white shadow-sm">
+                                                                <div key={index} className="border border-emerald-200 rounded-lg p-4 bg-white shadow-sm">
                                                                     <div className="flex justify-between items-start mb-3">
-                                                                        <h5 className="font-medium text-lg text-primary">{selection.college.name}</h5>
+                                                                        <h5 className="font-medium text-lg text-emerald-700">{selection.college.name}</h5>
                                                                         {selection.applicationStatus && (
-                                                                            <Badge variant="secondary" className="bg-secondary/10 text-secondary">
+                                                                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-emerald-200">
                                                                                 {selection.applicationStatus}
                                                                             </Badge>
                                                                         )}
                                                                     </div>
                                                                     {selection.courses.length > 0 && (
                                                                         <div className="mb-2">
-                                                                            <p className="text-sm font-medium text-muted-foreground mb-1">Applied Courses:</p>
+                                                                            <p className="text-sm font-medium text-slate-600 mb-1">Applied Courses:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {selection.courses.map((course, courseIndex) => (
-                                                                                    <Badge key={courseIndex} variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
+                                                                                    <Badge key={courseIndex} variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
                                                                                         {course}
                                                                                     </Badge>
                                                                                 ))}
@@ -1062,14 +1087,15 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
                                                                         </div>
                                                                     )}
                                                                     {selection.notes && (
-                                                                        <div className="mt-2 p-2 bg-muted/30 rounded text-sm">
-                                                                            <span className="font-medium">Notes: </span>
-                                                                            {selection.notes}
+                                                                        <div className="mt-2 p-2 bg-emerald-50/50 rounded text-sm border-l-2 border-emerald-300">
+                                                                            <span className="font-medium text-emerald-700">Notes: </span>
+                                                                            <span className="text-slate-600">{selection.notes}</span>
                                                                         </div>
                                                                     )}
                                                                     {selection.addedAt && (
-                                                                        <div className="text-xs text-muted-foreground mt-2">
-                                                                            Applied on: {new Date(selection.addedAt).toLocaleDateString()}
+                                                                        <div className="text-xs text-slate-500 mt-2 flex items-center gap-1">
+                                                                            <Calendar className="w-3 h-3" />
+                                                                            Applied: {new Date(selection.addedAt).toLocaleDateString()}
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -1096,15 +1122,15 @@ const StudentsTab: FC<{ onForwardProfile: (student: Student) => void }> = ({ onF
 
 const AdmittedTab: FC = () => {
     return (
-        <Card className="shadow-card">
-            <CardHeader className="border-b bg-gradient-to-r from-success/5 to-success/10">
-                <CardTitle className="flex items-center gap-3">
-                    <div className="p-2 bg-success/10 rounded-lg">
-                        <GraduationCap className="w-6 h-6 text-success" />
+        <Card className="shadow-xl border-green-100">
+            <CardHeader className="border-b bg-gradient-to-r from-green-500/10 to-green-600/15">
+                <CardTitle className="flex items-center gap-3 text-green-700">
+                    <div className="p-2 bg-green-500/10 rounded-lg">
+                        <GraduationCap className="w-6 h-6 text-green-600" />
                     </div>
-                    Admitted Students
-                    <Badge variant="secondary" className="ml-auto">
-                        {admittedData.length} Admissions
+                    Successful Admissions
+                    <Badge variant="secondary" className="ml-auto bg-green-100 text-green-700 border-green-200">
+                        {admittedData.length} Completed
                     </Badge>
                 </CardTitle>
             </CardHeader>
@@ -1173,6 +1199,7 @@ const AdmittedTab: FC = () => {
 };
 
 const ShortlistsTab: FC = () => {
+    const {server} = useMainContext();
     const [stats, setStats] = useState<ShortlistStat[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -1186,7 +1213,7 @@ const ShortlistsTab: FC = () => {
             setMode('single');
             setStudentsLoading(true); setError(null);
             try {
-                const res = await fetch('/api/shortlists/college', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+                const res = await fetch(`${server}/api/shortlists/college`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
                 if (res.status === 401) throw new Error('Unauthorized');
                 if (res.status === 403) throw new Error('Forbidden');
                 if (!res.ok) throw new Error('Failed to load your college shortlist');
@@ -1197,13 +1224,13 @@ const ShortlistsTab: FC = () => {
             } catch (e) {
                 setError(e instanceof Error ? e.message : 'Error');
             } finally { setStudentsLoading(false); }
-        }, [token]);
+        }, [token, server]);
 
         const fetchStats = React.useCallback(async () => {
             setMode('aggregate');
             setLoading(true); setError(null);
             try {
-                const res = await fetch('/api/shortlists/stats/aggregate', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+                const res = await fetch(`${server}/api/shortlists/stats/aggregate`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
                 if (res.status === 401 || res.status === 403) {
                     // Not admin; fallback to single college view
                     setLoading(false);
@@ -1216,13 +1243,13 @@ const ShortlistsTab: FC = () => {
             } catch (e) {
                 setError(e instanceof Error ? e.message : 'Error');
             } finally { setLoading(false); }
-        }, [token, fetchOwnCollege]);
+        }, [token, fetchOwnCollege, server]);
 
   const fetchStudents = async (stat: ShortlistStat) => {
     setSelectedCollege(stat);
     setStudentsLoading(true); setError(null); setStudents([]);
     try {
-      const res = await fetch(`/api/shortlists/college/${stat.collegeAdminId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      const res = await fetch(`${server}/api/shortlists/college/${stat.collegeAdminId}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       if (res.status === 401) throw new Error('Unauthorized');
       if (!res.ok) throw new Error('Failed to load students');
       const body = await res.json();
@@ -1237,12 +1264,18 @@ const ShortlistsTab: FC = () => {
   return (
     <div className="space-y-6">
             {mode === 'aggregate' && (
-                <Card className="shadow-card">
-                    <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10">
-                        <CardTitle className="flex items-center gap-3">
-                            <div className="p-2 bg-primary/10 rounded-lg"><ListOrdered className="w-6 h-6 text-primary" /></div>
-                            Shortlist Overview
-                            <Button variant="ghost" size="sm" className="ml-auto" onClick={fetchStats} disabled={loading}>
+                <Card className="shadow-xl border-blue-100">
+                    <CardHeader className="border-b bg-gradient-to-r from-blue-500/10 to-blue-600/15">
+                        <CardTitle className="flex items-center gap-3 text-blue-700">
+                            <div className="p-2 bg-blue-500/10 rounded-lg"><ListOrdered className="w-6 h-6 text-blue-600" /></div>
+                            College Shortlist Analytics
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="ml-auto hover:bg-blue-50 text-blue-600" 
+                                onClick={fetchStats} 
+                                disabled={loading}
+                            >
                                 <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
                             </Button>
                         </CardTitle>
@@ -1289,11 +1322,14 @@ const ShortlistsTab: FC = () => {
             )}
 
     {selectedCollege && (
-        <Card className="shadow-card">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-3">
-          {mode === 'aggregate' ? 'Students who shortlisted ' + selectedCollege.name : 'Students who shortlisted your college'}
-              <Badge variant="outline" className="ml-auto">{students.length}</Badge>
+        <Card className="shadow-xl border-blue-100">
+          <CardHeader className="border-b bg-gradient-to-r from-blue-500/10 to-blue-600/15">
+            <CardTitle className="flex items-center gap-3 text-blue-700">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              {mode === 'aggregate' ? `Students interested in ${selectedCollege.name}` : 'Students interested in your college'}
+              <Badge variant="outline" className="ml-auto bg-blue-100 text-blue-700 border-blue-200">{students.length} Students</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -1335,6 +1371,8 @@ const ShortlistsTab: FC = () => {
 type Tab = 'colleges' | 'students' | 'admitted' | 'shortlists';
 
 const AdminPortal: FC = () => {
+    const { toast } = useToast();
+   
     const [activeTab, setActiveTab] = useState<Tab>('colleges');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -1342,7 +1380,11 @@ const AdminPortal: FC = () => {
 
     const handleForwardProfile = (student: Student) => {
         if (!student.collegeFinalized || !student.courseFinalized) {
-            alert("Please finalize the student's college and course before forwarding.");
+            toast({
+                title: "Cannot Forward Student",
+                description: "Please finalize the student's college and course before forwarding.",
+                variant: "destructive",
+            });
             return;
         }
         setSelectedStudent(student);
@@ -1350,62 +1392,71 @@ const AdminPortal: FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-slate-50">
             <div className="container mx-auto p-6 space-y-8">
                 {/* Header */}
-                <header className="text-center space-y-4">
+                <header className="text-center space-y-6">
                     <div className="flex items-center justify-center gap-4 mb-6">
-                        <div className="p-4 bg-gradient-primary rounded-2xl shadow-premium">
-                            <GraduationCap className="w-12 h-12 text-white" />
+                        <div className="p-4 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-2xl shadow-xl">
+                            <img 
+                                src="/logo.jpeg" 
+                                alt="CollegeManzil" 
+                                className="w-12 h-12 object-cover rounded-lg shadow-sm"
+                            />
                         </div>
                         <div className="text-left">
-                            <h1 className="text-4xl font-bold text-foreground">Admin Portal</h1>
-                            <p className="text-lg text-muted-foreground">My Dream Institution</p>
+                            <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent">
+                                CollegeManzil Admin
+                            </h1>
+                            <p className="text-lg text-slate-600">Administrative Dashboard</p>
                         </div>
                     </div>
-                    <p className="text-muted-foreground max-w-2xl mx-auto">
+                    <p className="text-slate-600 max-w-3xl mx-auto text-lg leading-relaxed">
                         Comprehensive management system for educational institutions. 
-                        Streamline admissions, manage partnerships, and track student progress.
+                        Streamline admissions, manage college partnerships, and track student progress across the platform.
                     </p>
                 </header>
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Card className="shadow-card border-l-4 border-l-primary">
+                    <Card className="shadow-xl border-l-4 border-l-emerald-500 hover:shadow-2xl transition-all duration-300">
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Total Colleges</p>
-                                    <p className="text-3xl font-bold text-primary">{collegeCount}</p>
+                                    <p className="text-sm text-slate-600 font-medium">Partner Colleges</p>
+                                    <p className="text-3xl font-bold text-emerald-600">{collegeCount}</p>
+                                    <p className="text-xs text-slate-500 mt-1">Active institutions</p>
                                 </div>
-                                <div className="p-3 bg-primary/10 rounded-lg">
-                                    <Building2 className="w-6 h-6 text-primary" />
+                                <div className="p-3 bg-emerald-100 rounded-xl">
+                                    <Building2 className="w-7 h-7 text-emerald-600" />
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="shadow-card border-l-4 border-l-warning">
+                    <Card className="shadow-xl border-l-4 border-l-amber-500 hover:shadow-2xl transition-all duration-300">
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Active Leads</p>
-                                    <p className="text-3xl font-bold text-warning">{initialStudentsData.length}</p>
+                                    <p className="text-sm text-slate-600 font-medium">Student Leads</p>
+                                    <p className="text-3xl font-bold text-amber-600">{initialStudentsData.length}</p>
+                                    <p className="text-xs text-slate-500 mt-1">Active prospects</p>
                                 </div>
-                                <div className="p-3 bg-warning/10 rounded-lg">
-                                    <TrendingUp className="w-6 h-6 text-warning" />
+                                <div className="p-3 bg-amber-100 rounded-xl">
+                                    <TrendingUp className="w-7 h-7 text-amber-600" />
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="shadow-card border-l-4 border-l-success">
+                    <Card className="shadow-xl border-l-4 border-l-green-500 hover:shadow-2xl transition-all duration-300">
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Admissions</p>
-                                    <p className="text-3xl font-bold text-success">{admittedData.length}</p>
+                                    <p className="text-sm text-slate-600 font-medium">Successful Admissions</p>
+                                    <p className="text-3xl font-bold text-green-600">{admittedData.length}</p>
+                                    <p className="text-xs text-slate-500 mt-1">Completed placements</p>
                                 </div>
-                                <div className="p-3 bg-success/10 rounded-lg">
-                                    <CheckCircle2 className="w-6 h-6 text-success" />
+                                <div className="p-3 bg-green-100 rounded-xl">
+                                    <CheckCircle2 className="w-7 h-7 text-green-600" />
                                 </div>
                             </div>
                         </CardContent>
@@ -1413,21 +1464,33 @@ const AdminPortal: FC = () => {
                 </div>
 
                 {/* Main Content */}
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tab)} className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-3 lg:w-[400px] mx-auto h-12">
-                        <TabsTrigger value="colleges" className="flex items-center gap-2">
+                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tab)} className="space-y-8">
+                    <TabsList className="grid w-full grid-cols-4 lg:w-[600px] mx-auto h-14 bg-emerald-50 border border-emerald-200">
+                        <TabsTrigger 
+                            value="colleges" 
+                            className="flex items-center gap-2 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                        >
                             <Building2 className="w-4 h-4" />
                             Colleges
                         </TabsTrigger>
-                        <TabsTrigger value="students" className="flex items-center gap-2">
+                        <TabsTrigger 
+                            value="students" 
+                            className="flex items-center gap-2 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                        >
                             <Users className="w-4 h-4" />
                             Students
                         </TabsTrigger>
-                        <TabsTrigger value="admitted" className="flex items-center gap-2">
+                        <TabsTrigger 
+                            value="admitted" 
+                            className="flex items-center gap-2 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                        >
                             <GraduationCap className="w-4 h-4" />
                             Admitted
                         </TabsTrigger>
-                        <TabsTrigger value="shortlists" className="flex items-center gap-2">
+                        <TabsTrigger 
+                            value="shortlists" 
+                            className="flex items-center gap-2 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                        >
                             <ListOrdered className="w-4 h-4" />
                             Shortlists
                         </TabsTrigger>

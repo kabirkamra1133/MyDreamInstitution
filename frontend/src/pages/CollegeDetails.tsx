@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { StudentShortlists } from '../components/StudentShortlists';
+import { useMainContext } from '../context/mainContext';
 
 interface Media { url?: string }
 interface Contact { primaryPhone?: string; email?: string }
@@ -18,6 +19,7 @@ interface CollegeAdminData {
 
 const CollegeDetails: React.FC = () => {
   const { id } = useParams();
+  const { server } = useMainContext();
 
   const [data, setData] = useState<CollegeAdminData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -34,7 +36,7 @@ const CollegeDetails: React.FC = () => {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/college-admins/${id}`);
+        const res = await fetch(`${server}/api/college-admins/${id}`);
         if (!res.ok) {
           const txt = await res.text();
             throw new Error(txt || 'Failed to load');
@@ -48,7 +50,7 @@ const CollegeDetails: React.FC = () => {
       }
     })();
     return () => { abort = true; };
-  }, [id]);
+  }, [id, server]);
 
   const cover = data?.coverPhoto?.url || 'https://placehold.co/1200x400/E2E8F0/4A5568?text=Cover+Photo';
   const logo = data?.logo?.url || 'https://placehold.co/200x200/E2E8F0/4A5568?text=Logo';
@@ -197,7 +199,7 @@ const CollegeDetails: React.FC = () => {
                                     (async () => {
                                       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
                                       try {
-                                        const res = await fetch('/api/shortlists', {
+                                        const res = await fetch(`${server}/api/shortlists`, {
                                           method: 'POST',
                                           headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
                                           body: JSON.stringify({ collegeId: id, interestedCourses: newList })
@@ -222,7 +224,7 @@ const CollegeDetails: React.FC = () => {
                                 (async () => {
                                   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
                                   try {
-                                    const res = await fetch('/api/shortlists', {
+                                    const res = await fetch(`${server}/api/shortlists`, {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
                                       body: JSON.stringify({ collegeId: id, interestedCourses })
@@ -264,7 +266,7 @@ const CollegeDetails: React.FC = () => {
                                 onClick={async () => {
                                   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
                                   try {
-                                    const res = await fetch('/api/shortlists', {
+                                    const res = await fetch(`${server}/api/shortlists`, {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
                                       body: JSON.stringify({ collegeId: id, interestedCourses })

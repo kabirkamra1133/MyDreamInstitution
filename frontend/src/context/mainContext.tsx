@@ -6,7 +6,7 @@ interface contextType{
 const mainContext = createContext<contextType | undefined>(undefined);
 const MainContextProvider:React.FC<{children:React.ReactNode}> = ({children})=>{
     const value = {
-        server : "http://localhost:3000"
+        server : "https://mydreaminstitution.onrender.com"
     }
     return <mainContext.Provider value={value}>
         {children}

@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useToast } from '../hooks/use-toast';
+import { useMainContext } from '../context/mainContext';
 
 const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { server } = useMainContext();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -14,21 +18,50 @@ const AdminLogin = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+
     try {
       const { username, password } = formData;
-      // admin username maps to email in backend; adjust if needed
-      const res = await axios.post('http://localhost:3000/api/auth/admin/login', { email: username, password });
-      const token = res?.data?.token;
-      if (token) {
-        localStorage.setItem('token', token);
-        localStorage.setItem('role', 'admin');
+      const response = await fetch(`${server}/api/auth/admin/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: username, password }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        const token = data?.token;
+        if (token) {
+          localStorage.setItem('token', token);
+          localStorage.setItem('role', 'admin');
+          localStorage.setItem('user', JSON.stringify(data.user));
+          
+          toast({
+            title: "Welcome Admin! 🔐",
+            description: "Successfully logged into admin dashboard",
+          });
+          
+          navigate("/admin-portal");
+        }
+      } else {
+        toast({
+          title: "Login Failed",
+          description: data.error || "Invalid admin credentials",
+          variant: "destructive",
+        });
       }
-      navigate("/some")
-      console.log('Admin login success', res.data);
     } catch (error) {
-      const err = error as { response?: { data?: { error?: string } } };
-      console.error('Admin login error', err);
-      alert(err?.response?.data?.error || 'Login failed');
+      console.error('Admin login error:', error);
+      toast({
+        title: "Connection Error",
+        description: "Unable to connect to server. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -41,65 +74,72 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen font-open-sans" style={{
-      background: 'linear-gradient(135deg, #1a1a2e, #16213e)'
-    }}>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-6xl mx-auto px-8 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 font-poppins font-semibold text-xl text-blue-900 no-underline">
-            <i className="fas fa-graduation-cap text-2xl"></i>
-            <span>My Dream Institution</span>
+      <nav className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-emerald-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-3 font-bold text-xl text-emerald-700 hover:text-emerald-800 transition-colors no-underline">
+            <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+              <img src="/logo.png" alt="CollegeManzil" className="w-7 h-7 rounded-lg object-cover" />
+            </div>
+            <span>CollegeManzil</span>
           </Link>
           
-          <Link to="/" className="px-6 py-2 border-2 border-blue-900 text-blue-900 rounded-lg font-medium transition-all duration-300 hover:bg-blue-900 hover:text-white">
-            Back to Home
-          </Link>
+          <div className="flex items-center gap-4">
+            <span className="text-slate-600 text-sm">Need assistance?</span>
+            <Link 
+              to="/" 
+              className="px-4 py-2 border-2 border-emerald-600 text-emerald-600 rounded-lg font-medium transition-all hover:bg-emerald-600 hover:text-white"
+            >
+              Back to Home
+            </Link>
+          </div>
         </div>
       </nav>
 
       {/* Login Section */}
-      <section className="py-12">
-        <div className="max-w-lg mx-auto px-8">
-          <div className="max-w-md mx-auto">
-            <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-              {/* Header */}
-              <div className="text-center mb-8">
-                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <i className="fas fa-user-shield text-3xl text-red-600"></i>
+      <section className="py-12 min-h-[calc(100vh-80px)] flex items-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 bg-white rounded-xl shadow-xl overflow-hidden min-h-[700px] items-center">
+            {/* Left Side - Form */}
+            <div className="p-12 flex flex-col justify-center">
+              <div className="max-w-md mx-auto w-full">
+                {/* Header */}
+                <div className="text-center mb-8">
+                  <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i className="fas fa-user-shield text-3xl text-red-600"></i>
+                  </div>
+                  <h1 className="text-3xl font-bold text-slate-800 mb-2">Admin Dashboard</h1>
+                  <p className="text-slate-600">Secure administrative access</p>
                 </div>
-                <h1 className="text-3xl font-bold text-slate-800 mb-2 font-poppins">Admin Panel</h1>
-                <p className="text-slate-500">Authorized access only</p>
-              </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Username Field */}
                 <div>
-                  <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-2">
+                  <label htmlFor="username" className="block text-sm font-semibold text-slate-700 mb-2">
+                    <i className="fas fa-user-shield text-emerald-600 mr-2"></i>
                     Admin Username
                   </label>
-                  <div className="relative">
-                    <i className="fas fa-user-shield absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                    <input
-                      type="text"
-                      id="username"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleInputChange}
-                      placeholder="Enter admin username"
-                      className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    placeholder="Enter admin username"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    required
+                    disabled={isLoading}
+                  />
                 </div>
 
                 {/* Password Field */}
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
+                  <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-2">
+                    <i className="fas fa-key text-emerald-600 mr-2"></i>
                     Admin Password
                   </label>
                   <div className="relative">
-                    <i className="fas fa-key absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
                     <input
                       type={showPassword ? 'text' : 'password'}
                       id="password"
@@ -107,13 +147,14 @@ const AdminLogin = () => {
                       value={formData.password}
                       onChange={handleInputChange}
                       placeholder="Enter admin password"
-                      className="w-full pl-12 pr-12 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      className="w-full px-4 pr-12 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                       required
+                      disabled={isLoading}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                     >
                       <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                     </button>
@@ -122,22 +163,21 @@ const AdminLogin = () => {
 
                 {/* Security Code */}
                 <div>
-                  <label htmlFor="securityCode" className="block text-sm font-medium text-slate-700 mb-2">
+                  <label htmlFor="securityCode" className="block text-sm font-semibold text-slate-700 mb-2">
+                    <i className="fas fa-shield-alt text-emerald-600 mr-2"></i>
                     Security Code
                   </label>
-                  <div className="relative">
-                    <i className="fas fa-shield-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                    <input
-                      type="text"
-                      id="securityCode"
-                      name="securityCode"
-                      value={formData.securityCode}
-                      onChange={handleInputChange}
-                      placeholder="Enter 2FA code"
-                      className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    id="securityCode"
+                    name="securityCode"
+                    value={formData.securityCode}
+                    onChange={handleInputChange}
+                    placeholder="Enter 2FA security code"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    required
+                    disabled={isLoading}
+                  />
                 </div>
 
                 {/* Remember Me */}
@@ -148,7 +188,7 @@ const AdminLogin = () => {
                       name="adminRememberMe"
                       checked={formData.adminRememberMe}
                       onChange={handleInputChange}
-                      className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
                     />
                     <span className="text-sm text-slate-600">Keep me signed in</span>
                   </label>
@@ -156,52 +196,37 @@ const AdminLogin = () => {
 
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 text-white py-3 rounded-lg font-medium shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-                  style={{
-                    background: 'linear-gradient(135deg, #ef4444, #f87171)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #dc2626, #ef4444)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
-                  }}
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white py-3 rounded-lg font-semibold shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <i className="fas fa-sign-in-alt"></i>
-                  Access Admin Panel
+                  {isLoading ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      <span>Authenticating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-sign-in-alt"></i>
+                      <span>Access Admin Panel</span>
+                    </>
+                  )}
                 </button>
               </form>
 
-              {/* Security Notice */}
-              <div className="mt-6 rounded-lg p-4" style={{
-                background: '#fef3c7',
-                border: '1px solid #f59e0b'
-              }}>
-                <div className="flex items-start gap-3">
-                  <i className="fas fa-exclamation-triangle mt-1" style={{ color: '#f59e0b', fontSize: '1.25rem' }}></i>
-                  <div>
-                    <h3 className="font-semibold mb-2" style={{ color: '#92400e' }}>Security Notice</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: '#92400e' }}>
-                      This is a restricted area. All access attempts are logged and monitored. Unauthorized access is prohibited.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Login Types */}
+              {/* Footer Links */}
               <div className="mt-8">
-                <p className="text-center text-slate-600 mb-4">Looking for a different login?</p>
+                <p className="text-center text-slate-600 mb-4 text-sm">Looking for a different portal?</p>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Link
                     to="/student-login"
-                    className="flex items-center justify-center gap-2 border border-slate-300 py-2 px-4 rounded-lg hover:bg-slate-50 transition-colors text-sm"
+                    className="flex items-center justify-center gap-2 border border-slate-300 py-2 px-4 rounded-lg hover:bg-slate-50 transition-colors text-sm text-slate-600"
                   >
                     <i className="fas fa-user-graduate"></i>
                     <span>Student Login</span>
                   </Link>
                   <Link
                     to="/college-login"
-                    className="flex items-center justify-center gap-2 border border-slate-300 py-2 px-4 rounded-lg hover:bg-slate-50 transition-colors text-sm"
+                    className="flex items-center justify-center gap-2 border border-slate-300 py-2 px-4 rounded-lg hover:bg-slate-50 transition-colors text-sm text-slate-600"
                   >
                     <i className="fas fa-university"></i>
                     <span>College Login</span>
@@ -209,53 +234,97 @@ const AdminLogin = () => {
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Admin Features */}
-            <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-slate-800 mb-4 font-poppins text-center">Admin Dashboard Features</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="flex flex-col items-center text-center p-3">
-                  <i className="fas fa-chart-bar text-2xl text-blue-600 mb-2"></i>
-                  <span className="text-sm text-slate-600">Analytics & Reports</span>
+          {/* Right Side - Admin Info */}
+          <div className="bg-gradient-to-br from-slate-900 to-slate-700 p-12 text-white flex flex-col justify-center min-h-[700px]">
+            <div className="max-w-md mx-auto w-full">
+              <h2 className="text-3xl font-bold mb-4">System Administration</h2>
+              <p className="text-slate-200 mb-8 leading-relaxed">
+                Manage the entire CollegeManzil platform with comprehensive administrative tools and real-time monitoring capabilities.
+              </p>
+              
+              <div className="space-y-6 mb-8">
+                <div className="flex items-center gap-4">
+                  <i className="fas fa-chart-bar text-2xl text-red-400 flex-shrink-0"></i>
+                  <div>
+                    <h3 className="font-semibold">Analytics & Reports</h3>
+                    <p className="text-slate-300 text-sm">Monitor platform performance and user engagement</p>
+                  </div>
                 </div>
-                <div className="flex flex-col items-center text-center p-3">
-                  <i className="fas fa-users text-2xl text-blue-600 mb-2"></i>
-                  <span className="text-sm text-slate-600">User Management</span>
+                <div className="flex items-center gap-4">
+                  <i className="fas fa-users text-2xl text-red-400 flex-shrink-0"></i>
+                  <div>
+                    <h3 className="font-semibold">User Management</h3>
+                    <p className="text-slate-300 text-sm">Manage students, colleges, and administrators</p>
+                  </div>
                 </div>
-                <div className="flex flex-col items-center text-center p-3">
-                  <i className="fas fa-university text-2xl text-blue-600 mb-2"></i>
-                  <span className="text-sm text-slate-600">College Management</span>
+                <div className="flex items-center gap-4">
+                  <i className="fas fa-shield-alt text-2xl text-red-400 flex-shrink-0"></i>
+                  <div>
+                    <h3 className="font-semibold">Security Controls</h3>
+                    <p className="text-slate-300 text-sm">Advanced security monitoring and access control</p>
+                  </div>
                 </div>
-                <div className="flex flex-col items-center text-center p-3">
-                  <i className="fas fa-file-alt text-2xl text-blue-600 mb-2"></i>
-                  <span className="text-sm text-slate-600">Application Review</span>
+                <div className="flex items-center gap-4">
+                  <i className="fas fa-cog text-2xl text-red-400 flex-shrink-0"></i>
+                  <div>
+                    <h3 className="font-semibold">System Configuration</h3>
+                    <p className="text-slate-300 text-sm">Platform settings and feature management</p>
+                  </div>
                 </div>
-                <div className="flex flex-col items-center text-center p-3">
-                  <i className="fas fa-cog text-2xl text-blue-600 mb-2"></i>
-                  <span className="text-sm text-slate-600">System Settings</span>
+              </div>
+
+              <div className="bg-slate-800/50 rounded-lg p-6 border border-slate-600">
+                <h4 className="font-semibold mb-4 text-red-400">Security Notice</h4>
+                <ul className="space-y-2 text-sm text-slate-300">
+                  <li className="flex items-start gap-3">
+                    <i className="fas fa-exclamation-triangle text-amber-400 mt-0.5 flex-shrink-0"></i>
+                    <span>All admin activities are logged and monitored</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <i className="fas fa-lock text-amber-400 mt-0.5 flex-shrink-0"></i>
+                    <span>Two-factor authentication required for access</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <i className="fas fa-user-secret text-amber-400 mt-0.5 flex-shrink-0"></i>
+                    <span>Unauthorized access attempts will be reported</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 text-center mt-8">
+                <div>
+                  <div className="text-3xl font-bold text-red-400">500+</div>
+                  <div className="text-slate-300 text-sm">Active Colleges</div>
                 </div>
-                <div className="flex flex-col items-center text-center p-3">
-                  <i className="fas fa-shield-alt text-2xl text-blue-600 mb-2"></i>
-                  <span className="text-sm text-slate-600">Security Controls</span>
+                <div>
+                  <div className="text-3xl font-bold text-red-400">10K+</div>
+                  <div className="text-slate-300 text-sm">Students</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-red-400">99.9%</div>
+                  <div className="text-slate-300 text-sm">Uptime</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-8">
-        <div className="max-w-6xl mx-auto px-8">
+      <footer className="bg-white border-t border-slate-200 py-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex gap-6">
-              <a href="#about" className="text-slate-600 hover:text-blue-600 transition-colors">About</a>
-              <a href="#privacy" className="text-slate-600 hover:text-blue-600 transition-colors">Privacy</a>
-              <a href="#terms" className="text-slate-600 hover:text-blue-600 transition-colors">Terms</a>
-              <a href="#contact" className="text-slate-600 hover:text-blue-600 transition-colors">Contact</a>
+            <div className="flex gap-6 text-sm">
+              <a href="#about" className="text-slate-600 hover:text-emerald-600 transition-colors">About</a>
+              <a href="#privacy" className="text-slate-600 hover:text-emerald-600 transition-colors">Privacy</a>
+              <a href="#terms" className="text-slate-600 hover:text-emerald-600 transition-colors">Terms</a>
+              <a href="#contact" className="text-slate-600 hover:text-emerald-600 transition-colors">Contact</a>
             </div>
             <div>
-              <p className="text-slate-600">© 2024 My Dream Institution. All rights reserved.</p>
+              <p className="text-slate-600 text-sm">© 2024 CollegeManzil. All rights reserved.</p>
             </div>
           </div>
         </div>

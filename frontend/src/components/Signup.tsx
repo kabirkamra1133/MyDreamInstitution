@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useMainContext } from '@/context/mainContext';
+import { useToast } from '@/hooks/use-toast';
 const Signup = () => {
   const {server} = useMainContext();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -31,45 +33,66 @@ const Signup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if(formData.confirmPassword!=formData.password) alert("Password and confirmPassword doesn't match");
-    const res = await axios.post(`${server}/api/auth/student/register`,formData);
-    if(res.status==200) {
-      alert("User registered successfully");
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: '',
-        dateOfBirth: '',
-        education: '',
-        interestedField: '',
-        terms: false,
-        newsletter: false
+    
+    if(formData.confirmPassword != formData.password) {
+      toast({
+        title: "Password Mismatch",
+        description: "Password and confirm password don't match",
+        variant: "destructive",
       });
-    }
-    else{
-      console.log("ok")
-      alert("Error in registration: " + res.data.error);
       return;
     }
-    console.log('Form submitted:', formData);
+    
+    try {
+      const res = await axios.post(`${server}/api/auth/student/register`, formData);
+      if(res.status == 200) {
+        toast({
+          title: "Registration Successful! 🎉",
+          description: "Welcome to CollegeManzil! You can now sign in to your account.",
+        });
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          password: '',
+          confirmPassword: '',
+          dateOfBirth: '',
+          education: '',
+          interestedField: '',
+          terms: false,
+          newsletter: false
+        });
+      }
+    } catch (error) {
+      let errorMessage = "An error occurred during registration";
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { error?: string } } };
+        errorMessage = axiosError.response?.data?.error || errorMessage;
+      }
+      
+      toast({
+        title: "Registration Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-open-sans">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-slate-50 font-open-sans">
       {/* Navigation */}
       <nav className="bg-white shadow-sm">
         <div className="max-w-6xl mx-auto px-8 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 font-poppins font-semibold text-xl text-blue-900 no-underline">
-            <i className="fas fa-graduation-cap text-2xl"></i>
-            <span>My Dream Institution</span>
+          <Link to="/" className="flex items-center gap-2 font-poppins font-semibold text-xl text-emerald-700 no-underline">
+            <img src="/logo.png" alt="CollegeManzil" className="w-8 h-8 rounded-lg object-cover shadow-sm" />
+            <span>CollegeManzil</span>
           </Link>
           
           <div className="flex items-center gap-4">
             <span className="text-slate-600">Already have an account?</span>
-            <Link to="/student-login" className="px-6 py-2 border-2 border-blue-900 text-blue-900 rounded-lg font-medium transition-all duration-300 hover:bg-blue-900 hover:text-white">
+            <Link to="/student-login" className="px-6 py-2 border-2 border-emerald-600 text-emerald-600 rounded-lg font-medium transition-all duration-300 hover:bg-emerald-600 hover:text-white">
               Sign In
             </Link>
           </div>
@@ -102,7 +125,7 @@ const Signup = () => {
                           name="firstName"
                           value={formData.firstName}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                           required
                         />
                       </div>
@@ -116,7 +139,7 @@ const Signup = () => {
                           name="lastName"
                           value={formData.lastName}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                           required
                         />
                       </div>
@@ -133,7 +156,7 @@ const Signup = () => {
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                         required
                       />
                     </div>
@@ -149,7 +172,7 @@ const Signup = () => {
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                         required
                       />
                     </div>
@@ -166,7 +189,7 @@ const Signup = () => {
                           name="password"
                           value={formData.password}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                           required
                         />
                       </div>
@@ -180,7 +203,7 @@ const Signup = () => {
                           name="confirmPassword"
                           value={formData.confirmPassword}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                           required
                         />
                       </div>
@@ -197,7 +220,7 @@ const Signup = () => {
                         name="dateOfBirth"
                         value={formData.dateOfBirth}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                         required
                       />
                     </div>
@@ -212,7 +235,7 @@ const Signup = () => {
                         name="education"
                         value={formData.education}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                         required
                       >
                         <option value="">Select Education Level</option>
@@ -233,7 +256,7 @@ const Signup = () => {
                         name="interestedField"
                         value={formData.interestedField}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                         required
                       >
                         <option value="">Select Field</option>
@@ -255,11 +278,11 @@ const Signup = () => {
                           name="terms"
                           checked={formData.terms}
                           onChange={handleInputChange}
-                          className="mt-1 w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                          className="mt-1 w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
                           required
                         />
                         <span className="text-sm text-slate-600">
-                          I agree to the <a href="#terms" className="text-blue-600 hover:underline">Terms of Service</a> and <a href="#privacy" className="text-blue-600 hover:underline">Privacy Policy</a>
+                          I agree to the <a href="#terms" className="text-emerald-600 hover:underline">Terms of Service</a> and <a href="#privacy" className="text-emerald-600 hover:underline">Privacy Policy</a>
                         </span>
                       </label>
 
@@ -269,7 +292,7 @@ const Signup = () => {
                           name="newsletter"
                           checked={formData.newsletter}
                           onChange={handleInputChange}
-                          className="mt-1 w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                          className="mt-1 w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
                         />
                         <span className="text-sm text-slate-600">
                           Subscribe to our newsletter for college updates and admission tips
@@ -279,7 +302,7 @@ const Signup = () => {
 
                     <button
                       type="submit"
-                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-900 to-blue-700 text-white py-3 rounded-lg font-medium shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white py-3 rounded-lg font-medium shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
                     >
                       <i className="fas fa-user-plus"></i>
                       Create Account
@@ -308,17 +331,17 @@ const Signup = () => {
                   {/* Footer Link */}
                   <div className="mt-6 text-center">
                     <p className="text-slate-600">
-                      Already have an account? <Link to="/student-login" className="text-blue-600 hover:underline font-medium">Sign in here</Link>
+                      Already have an account? <Link to="/student-login" className="text-emerald-600 hover:underline font-medium">Sign in here</Link>
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Right Side - Info */}
-              <div className="bg-gradient-to-br from-blue-900 to-blue-700 p-8 lg:p-12 text-white">
+              <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-8 lg:p-12 text-white">
                 <div className="max-w-md mx-auto">
                   <h2 className="text-3xl font-bold mb-4 font-poppins">Join Thousands of Students</h2>
-                  <p className="text-blue-100 mb-8 leading-relaxed">
+                  <p className="text-emerald-100 mb-8 leading-relaxed">
                     Discover your dream college and simplify your admission process with our comprehensive platform.
                   </p>
                   
@@ -326,33 +349,33 @@ const Signup = () => {
                     <div className="flex items-center gap-4">
                       <i className="fas fa-university text-2xl text-yellow-400"></i>
                       <div>
-                        <h3 className="font-semibold font-poppins">1000+ Colleges</h3>
-                        <p className="text-blue-100 text-sm">Access to top colleges and universities</p>
+                        <h3 className="font-semibold font-poppins">500+ Partner Colleges</h3>
+                        <p className="text-emerald-100 text-sm">Access to top colleges and universities</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <i className="fas fa-file-alt text-2xl text-yellow-400"></i>
                       <div>
-                        <h3 className="font-semibold font-poppins">Single Application</h3>
-                        <p className="text-blue-100 text-sm">Apply to multiple colleges with one form</p>
+                        <h3 className="font-semibold font-poppins">Streamlined Applications</h3>
+                        <p className="text-emerald-100 text-sm">Apply to multiple colleges with simplified process</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <i className="fas fa-chart-line text-2xl text-yellow-400"></i>
                       <div>
-                        <h3 className="font-semibold font-poppins">95% Success Rate</h3>
-                        <p className="text-blue-100 text-sm">High admission success rate for our students</p>
+                        <h3 className="font-semibold font-poppins">Expert Guidance</h3>
+                        <p className="text-emerald-100 text-sm">Professional counseling and admission support</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="bg-white/10 p-6 rounded-lg backdrop-blur-sm">
-                    <p className="text-blue-50 italic mb-4">
-                      "My Dream Institution made my college application process so much easier. I got admitted to my dream university!"
+                    <p className="text-emerald-50 italic mb-4">
+                      "CollegeManzil made my college application process so much easier. I got admitted to my dream university!"
                     </p>
                     <div>
-                      <strong className="text-white">Sarah Johnson</strong>
-                      <span className="text-blue-200 text-sm block">Student, MIT</span>
+                      <strong className="text-white">Priya Sharma</strong>
+                      <span className="text-emerald-200 text-sm block">Student, IIT Delhi</span>
                     </div>
                   </div>
                 </div>
@@ -367,13 +390,13 @@ const Signup = () => {
         <div className="max-w-6xl mx-auto px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex gap-6">
-              <a href="#about" className="text-slate-600 hover:text-blue-600 transition-colors">About</a>
-              <a href="#privacy" className="text-slate-600 hover:text-blue-600 transition-colors">Privacy</a>
-              <a href="#terms" className="text-slate-600 hover:text-blue-600 transition-colors">Terms</a>
-              <a href="#contact" className="text-slate-600 hover:text-blue-600 transition-colors">Contact</a>
+              <a href="#about" className="text-slate-600 hover:text-emerald-600 transition-colors">About</a>
+              <a href="#privacy" className="text-slate-600 hover:text-emerald-600 transition-colors">Privacy</a>
+              <a href="#terms" className="text-slate-600 hover:text-emerald-600 transition-colors">Terms</a>
+              <a href="#contact" className="text-slate-600 hover:text-emerald-600 transition-colors">Contact</a>
             </div>
             <div>
-              <p className="text-slate-600">© 2024 My Dream Institution. All rights reserved.</p>
+              <p className="text-slate-600">© 2025 CollegeManzil. All rights reserved.</p>
             </div>
           </div>
         </div>

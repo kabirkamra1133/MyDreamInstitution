@@ -119,35 +119,9 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
     }));
   };
 
-  const addCourse = () => {
-    setProfileData(prev => ({
-      ...prev,
-      courses: [
-        ...prev.courses,
-        { name: '', subCourses: [{ name: '', fee: '', eligibility: [''] }] }
-      ]
-    }));
-  };
+ 
 
-  const updateCourse = (courseIndex: number, field: string, value: string) => {
-    setProfileData(prev => ({
-      ...prev,
-      courses: prev.courses.map((course, i) => 
-        i === courseIndex ? { ...course, [field]: value } : course
-      )
-    }));
-  };
 
-  const addSubCourse = (courseIndex: number) => {
-    setProfileData(prev => ({
-      ...prev,
-      courses: prev.courses.map((course, i) => 
-        i === courseIndex 
-          ? { ...course, subCourses: [...course.subCourses, { name: '', fee: '', eligibility: [''] }] }
-          : course
-      )
-    }));
-  };
 
   return (
     <div className="space-y-6">
@@ -200,6 +174,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
                   variant="outline" 
                   disabled={isUploading}
                   onClick={() => onImageUpload('logo')}
+                  className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300"
                 >
                   <Upload className="mr-2 h-4 w-4" />
                   Upload Logo
@@ -220,6 +195,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
                   variant="outline" 
                   disabled={isUploading}
                   onClick={() => onImageUpload('coverPhoto')}
+                  className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300"
                 >
                   <Upload className="mr-2 h-4 w-4" />
                   Upload Cover
@@ -254,7 +230,12 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label>Features</Label>
-              <Button variant="outline" size="sm" onClick={addFeature}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={addFeature}
+                className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300"
+              >
                 <Plus className="h-4 w-4 mr-1" />
                 Add Feature
               </Button>
@@ -270,6 +251,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => removeFeature(index)}
+                  className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
@@ -295,7 +277,12 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label>Promotional Videos</Label>
-              <Button variant="outline" size="sm" onClick={addVideo}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={addVideo}
+                className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300"
+              >
                 <Plus className="h-4 w-4 mr-1" />
                 Add Video
               </Button>
@@ -639,9 +626,24 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
       </Card>
 
       {/* Submit Button */}
-      <div className="flex justify-end">
-        <Button onClick={onSubmit} disabled={isUploading} size="lg">
-          {isEditing ? 'Update Profile' : 'Create Profile'}
+      <div className="flex justify-end pt-6">
+        <Button 
+          onClick={onSubmit} 
+          disabled={isUploading} 
+          size="lg"
+          className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white shadow-lg font-semibold px-8 py-3 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isUploading ? (
+            <>
+              <i className="fas fa-spinner fa-spin mr-2"></i>
+              {isEditing ? 'Updating...' : 'Creating...'}
+            </>
+          ) : (
+            <>
+              <i className="fas fa-save mr-2"></i>
+              {isEditing ? 'Update Profile' : 'Create Profile'}
+            </>
+          )}
         </Button>
       </div>
     </div>

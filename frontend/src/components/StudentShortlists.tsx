@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookOpen, GraduationCap, MapPin, Trash2 } from 'lucide-react';
+import { useMainContext } from '../context/mainContext';
 
 interface ShortlistedCourse {
   parent: string;
@@ -28,6 +29,7 @@ interface ShortlistedCollege {
 }
 
 export const StudentShortlists: React.FC = () => {
+  const { server } = useMainContext();
   const [shortlists, setShortlists] = useState<ShortlistedCollege[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -37,7 +39,7 @@ export const StudentShortlists: React.FC = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        const response = await fetch('/api/shortlists/my-shortlists', {
+        const response = await fetch(`${server}/api/shortlists/my-shortlists`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -58,12 +60,12 @@ export const StudentShortlists: React.FC = () => {
     };
 
     fetchShortlists();
-  }, []);
+  }, [server]);
 
   const removeFromShortlist = async (shortlistId: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/shortlists/${shortlistId}`, {
+      const response = await fetch(`${server}/api/shortlists/${shortlistId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

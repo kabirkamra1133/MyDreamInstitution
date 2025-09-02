@@ -61,7 +61,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ profileData, onEdit })
             </div>
           )}
           <div className="absolute top-4 right-4">
-            <Button onClick={onEdit}>
+            <Button 
+              onClick={onEdit}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg border-0 font-semibold transition-all duration-300 hover:-translate-y-0.5"
+            >
               <Edit className="h-4 w-4 mr-2" />
               Edit Profile
             </Button>

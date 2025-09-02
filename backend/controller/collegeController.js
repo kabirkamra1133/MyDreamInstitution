@@ -14,8 +14,23 @@ export const getRegisteredColleges = async (req, res) => {
 }
 export const getAllColleges = async (req, res) => {
   try {
+    // Extract search parameters from query
+    const { search, location, course } = req.query;
+    
+    // Build search filter
+    let searchFilter = {};
+    if (search) {
+      searchFilter = {
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { 'profile.description': { $regex: search, $options: 'i' } }
+        ]
+      };
+    }
+    
     // fetch college admins and include the referenced College document when available
-    const admins = await CollegeAdmin.find().populate('college').lean();
+    const admins = await CollegeAdmin.find(searchFilter).populate('college').lean();
 
     // Aggregate interested courses from shortlists so admin listing can show student-selected courses
     const agg = await Shortlist.aggregate([
@@ -57,13 +72,30 @@ export const getAllColleges = async (req, res) => {
         contactNumber: a.contactNumber || (a.profile && a.profile.contact && a.profile.contact.primaryPhone) || (a.college && a.college.contactNumber) || '',
         logo: a.logo && a.logo.url ? a.logo.url : (a.college && a.college.logo) ? a.college.logo : null,
         coverPhoto: a.coverPhoto && a.coverPhoto.url ? a.coverPhoto.url : null,
-  // Merge courses declared by the college admin with courses students selected in shortlists
-  courses: Array.from(new Set([...(Array.isArray(a.courses) ? a.courses.map(c => c.name) : []), ...(shortlistMap[a._id?.toString?.() || a._id] || [])])).filter(Boolean),
+        // Merge courses declared by the college admin with courses students selected in shortlists
+        courses: Array.from(new Set([...(Array.isArray(a.courses) ? a.courses.map(c => c.name) : []), ...(shortlistMap[a._id?.toString?.() || a._id] || [])])).filter(Boolean),
         createdAt: a.createdAt
       };
     });
 
-    return res.json({ data });
+    // Apply additional filtering based on location and course after data processing
+    let filteredData = data;
+    
+    if (location) {
+      filteredData = filteredData.filter(college => 
+        college.city?.toLowerCase().includes(location.toLowerCase()) ||
+        college.state?.toLowerCase().includes(location.toLowerCase()) ||
+        college.address?.toLowerCase().includes(location.toLowerCase())
+      );
+    }
+    
+    if (course) {
+      filteredData = filteredData.filter(college => 
+        college.courses.some(c => c.toLowerCase().includes(course.toLowerCase()))
+      );
+    }
+
+    return res.json({ data: filteredData });
   } catch (err) {
     console.error('getAllColleges error', err);
     return res.status(500).json({ error: 'Server error' });

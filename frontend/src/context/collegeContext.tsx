@@ -1,11 +1,8 @@
 
 import axios from "axios";
 import React, { createContext, useContext } from "react";
-interface College{
-    name?: string,
-    email : string,
-    password? : string,
-}
+import { useMainContext } from "./mainContext";
+
 interface contextType{
     getAllColleges : ()=>Promise<Record<string, unknown>[]>
     getRegisteredColleges : ()=>Promise<Record<string, unknown>[]>
@@ -15,9 +12,11 @@ interface contextType{
 }
 const CollegeContext = createContext<contextType|null>(null);
 const CollegeProvider : React.FC<{children : React.ReactNode}> = ({children})=>{
+    const { server } = useMainContext();
+    
     const getAllColleges = async()=>{
         try{
-            const res = await axios.get('/api/colleges');
+            const res = await axios.get(`${server}/api/colleges`);
             // backend returns { data: [...] }
             return Array.isArray(res?.data?.data) ? res.data.data : [];
         }catch(err){
@@ -53,7 +52,7 @@ const CollegeProvider : React.FC<{children : React.ReactNode}> = ({children})=>{
 
         // Backend fallback: send file to local server which stores it under /uploads
         try{
-            const res = await axios.post('/api/college-admins/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+            const res = await axios.post(`${server}/api/college-admins/upload`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
             return res?.data?.url || '';
         }catch(err: unknown){
             console.error('Backend upload failed', err);
@@ -61,15 +60,17 @@ const CollegeProvider : React.FC<{children : React.ReactNode}> = ({children})=>{
             try{
                 const maybe = err as unknown;
                 if (typeof maybe === 'object' && maybe !== null) {
-                    
+                    //eslint-disable-next-line
                     if ('response' in maybe && (maybe as any).response && 'data' in (maybe as any).response) {
+                        //eslint-disable-next-line
                         msg = (maybe as any).response.data;
+                        //eslint-disable-next-line
                     } else if ('message' in maybe && typeof (maybe as any).message === 'string') {
-                   
+                       //eslint-disable-next-line
                         msg = (maybe as any).message;
                     }
                 }
-            }catch(e){ /* fall back to String(err) */ }
+            }catch{ /* fall back to String(err) */ }
             throw new Error(typeof msg === 'string' ? msg : 'Upload failed');
         }
     }
@@ -78,7 +79,7 @@ const CollegeProvider : React.FC<{children : React.ReactNode}> = ({children})=>{
             const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
             const headers: Record<string,string> = {};
             if(token) headers.Authorization = `Bearer ${token}`;
-            const res = await axios.post('/api/auth/college/register', data, { headers });
+            const res = await axios.post(`${server}/api/auth/college/register`, data, { headers });
             return res.data;
         }catch(err){
             console.error('saveCollegeData failed', err);
@@ -90,7 +91,7 @@ const CollegeProvider : React.FC<{children : React.ReactNode}> = ({children})=>{
         try{
             // Use the admin-facing colleges endpoint which merges college-admin declared
             // courses with student-selected courses from shortlists.
-            const res = await axios.get('/api/colleges');
+            const res = await axios.get(`${server}/api/colleges`);
             // backend returns { data: [...] }
             return Array.isArray(res?.data?.data) ? res.data.data : [];
         }

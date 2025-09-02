@@ -3,6 +3,7 @@ import { ProfileView } from "./ProfileView";
 import { ProfileForm } from "./ProfileForm";
 import { ImageEditor } from "@/components/ui/image-editor";
 import { useToast } from "@/hooks/use-toast";
+import { useMainContext } from '../../context/mainContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -60,6 +61,7 @@ interface ProfileData {
 }
 
 const CollegeAdminPortal: React.FC = () => {
+  const { server } = useMainContext();
   const [profileData, setProfileData] = useState<ProfileData>({
     name: '',
     contactNumber: '',
@@ -112,7 +114,7 @@ const CollegeAdminPortal: React.FC = () => {
       if (!token) return;
 
       try {
-        const response = await fetch('/api/college-admins/profile', {
+        const response = await fetch(`${server}/api/college-admins/profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -156,7 +158,7 @@ const CollegeAdminPortal: React.FC = () => {
     };
 
     loadProfile();
-  }, [token]);
+  }, [token, server]);
 
   // Fetch forwarded students
   useEffect(() => {
@@ -166,7 +168,7 @@ const CollegeAdminPortal: React.FC = () => {
       setLoadingStudents(true);
       setStudentsError(null);
       try {
-        const response = await fetch('/api/college-admins/forwarded-students', {
+        const response = await fetch(`${server}/api/college-admins/forwarded-students`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -185,7 +187,7 @@ const CollegeAdminPortal: React.FC = () => {
     };
 
     fetchForwardedStudents();
-  }, [token]);
+  }, [token, server]);
 
   const handleImageUpload = async (field: 'logo' | 'coverPhoto') => {
     const input = document.createElement('input');
@@ -304,27 +306,42 @@ const CollegeAdminPortal: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30">
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
         
         {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">College Admin Portal</h1>
-          <p className="text-muted-foreground">Manage your college profile and view interested students</p>
+        <div className="text-center space-y-4 mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
+              <img src="/logo.jpeg" alt="CollegeManzil" className="w-12 h-12 rounded-lg object-cover" />
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent">
+            CollegeManzil Portal
+          </h1>
+          <p className="text-slate-600 text-lg max-w-2xl mx-auto">
+            Manage your institution profile and connect with prospective students
+          </p>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'profile' | 'students')} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:w-[400px] mx-auto h-12">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              College Profile
+          <TabsList className="grid w-full grid-cols-2 lg:w-[500px] mx-auto h-14 bg-emerald-50 border border-emerald-200">
+            <TabsTrigger 
+              value="profile" 
+              className="flex items-center gap-3 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+            >
+              <Building2 className="w-5 h-5" />
+              Institution Profile
             </TabsTrigger>
-            <TabsTrigger value="students" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Students Interested
+            <TabsTrigger 
+              value="students" 
+              className="flex items-center gap-3 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+            >
+              <Users className="w-5 h-5" />
+              Student Applications
               {forwardedStudents.length > 0 && (
-                <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700">
+                <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-700 border-amber-200">
                   {forwardedStudents.length}
                 </Badge>
               )}
@@ -333,48 +350,64 @@ const CollegeAdminPortal: React.FC = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile">
-            {existingProfile && !isEditing ? (
-              <ProfileView 
-                profileData={existingProfile} 
-                onEdit={startEditing}
-              />
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold">
-                    {existingProfile ? 'Edit Profile' : 'Create Profile'}
-                  </h2>
-                  {existingProfile && (
-                    <Button variant="outline" onClick={cancelEditing}>
-                      Cancel
-                    </Button>
-                  )}
-                </div>
-                
-                <ProfileForm
-                  profileData={profileData}
-                  setProfileData={setProfileData}
-                  onSubmit={handleSubmit}
-                  onImageUpload={handleImageUpload}
-                  isUploading={uploadingLogo || uploadingCover}
-                  isEditing={!!existingProfile}
-                />
-              </div>
-            )}
+            <Card className="shadow-xl border-emerald-100">
+              <CardContent className="p-8">
+                {existingProfile && !isEditing ? (
+                  <ProfileView 
+                    profileData={existingProfile} 
+                    onEdit={startEditing}
+                  />
+                ) : (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold text-slate-800">
+                          {existingProfile ? 'Edit Institution Profile' : 'Create Institution Profile'}
+                        </h2>
+                        <p className="text-slate-600 mt-1">
+                          {existingProfile ? 'Update your college information and courses' : 'Set up your college profile to attract students'}
+                        </p>
+                      </div>
+                      {existingProfile && (
+                        <Button 
+                          variant="outline" 
+                          onClick={cancelEditing}
+                          className="border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                        >
+                          Cancel Changes
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <ProfileForm
+                      profileData={profileData}
+                      setProfileData={setProfileData}
+                      onSubmit={handleSubmit}
+                      onImageUpload={handleImageUpload}
+                      isUploading={uploadingLogo || uploadingCover}
+                      isEditing={!!existingProfile}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Students Interested Tab */}
           <TabsContent value="students">
-            <Card className="shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-blue-500/10 to-blue-600/10">
-                <CardTitle className="flex items-center gap-3 text-blue-600">
-                  <div className="p-2 bg-blue-500/10 rounded-lg">
-                    <Users className="w-6 h-6 text-blue-600" />
+            <Card className="shadow-xl border-emerald-100">
+              <CardHeader className="bg-gradient-to-r from-emerald-500/10 to-emerald-600/15 border-b border-emerald-100">
+                <CardTitle className="flex items-center gap-4 text-emerald-700">
+                  <div className="p-3 bg-emerald-500/10 rounded-xl">
+                    <Users className="w-7 h-7 text-emerald-600" />
                   </div>
-                  Students Interested in Your College
-                  <div className="ml-auto flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                      {forwardedStudents.length} Students
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold">Student Applications</h3>
+                    <p className="text-emerald-600 text-sm font-normal">Students interested in your institution</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-emerald-200 px-3 py-1">
+                      {forwardedStudents.length} Applications
                     </Badge>
                     <Button 
                       size="sm" 
@@ -384,7 +417,7 @@ const CollegeAdminPortal: React.FC = () => {
                         const fetchStudents = async () => {
                           setLoadingStudents(true);
                           try {
-                            const response = await fetch('/api/college-admins/forwarded-students', {
+                            const response = await fetch(`${server}/api/college-admins/forwarded-students`, {
                               headers: { 'Authorization': `Bearer ${token}` }
                             });
                             if (response.ok) {
@@ -399,101 +432,122 @@ const CollegeAdminPortal: React.FC = () => {
                         };
                         fetchStudents();
                       }}
+                      className="border-emerald-200 text-emerald-600 hover:bg-emerald-50"
                     >
                       <RefreshCw className="w-4 h-4" />
+                      Refresh
                     </Button>
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="p-8">
                 {loadingStudents ? (
-                  <div className="flex justify-center items-center h-32">
-                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="flex flex-col justify-center items-center h-40 space-y-4">
+                    <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-slate-600">Loading student applications...</p>
                   </div>
                 ) : studentsError ? (
-                  <div className="p-6 text-center text-red-600">{studentsError}</div>
+                  <div className="p-8 text-center">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <i className="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                    </div>
+                    <h3 className="text-lg font-semibold text-red-600 mb-2">Error Loading Applications</h3>
+                    <p className="text-red-500">{studentsError}</p>
+                  </div>
                 ) : forwardedStudents.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-lg font-semibold mb-2">No Students Forwarded Yet</h3>
-                    <p>Students will appear here when admins forward their profiles to your college.</p>
-                    <p className="text-sm mt-2">Check back later or contact the admin team for more information.</p>
+                  <div className="p-12 text-center text-slate-600">
+                    <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Users className="w-10 h-10 text-emerald-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-800 mb-3">No Applications Yet</h3>
+                    <p className="text-lg mb-2">Students will appear here when admins forward their profiles to your institution.</p>
+                    <p className="text-sm text-slate-500">Complete your profile to start attracting prospective students!</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          <TableHead className="font-semibold text-blue-600">Student Details</TableHead>
-                          <TableHead className="font-semibold text-blue-600">Contact Info</TableHead>
-                          <TableHead className="font-semibold text-blue-600">Education</TableHead>
-                          <TableHead className="font-semibold text-blue-600">Interested Courses</TableHead>
-                          <TableHead className="font-semibold text-blue-600">Admin Notes</TableHead>
-                          <TableHead className="font-semibold text-blue-600">Forwarded Date</TableHead>
+                        <TableRow className="bg-emerald-50/50 border-b border-emerald-100">
+                          <TableHead className="font-bold text-emerald-700 py-4">Student Details</TableHead>
+                          <TableHead className="font-bold text-emerald-700 py-4">Contact Information</TableHead>
+                          <TableHead className="font-bold text-emerald-700 py-4">Academic Background</TableHead>
+                          <TableHead className="font-bold text-emerald-700 py-4">Course Interests</TableHead>
+                          <TableHead className="font-bold text-emerald-700 py-4">Admin Notes</TableHead>
+                          <TableHead className="font-bold text-emerald-700 py-4">Application Date</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {forwardedStudents.map((student) => (
-                          <TableRow key={student.id} className="hover:bg-blue-50/50 transition-colors">
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-500/10 rounded-full">
-                                  <User className="w-4 h-4 text-blue-600" />
+                          <TableRow key={student.id} className="hover:bg-emerald-50/30 transition-colors border-b border-slate-100">
+                            <TableCell className="py-4">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <User className="w-6 h-6 text-emerald-600" />
                                 </div>
                                 <div>
-                                  <div className="font-semibold text-foreground">{student.name}</div>
-                                  <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                    <Mail className="w-3 h-3" />
+                                  <div className="font-bold text-slate-800 text-lg">{student.name}</div>
+                                  <div className="text-sm text-slate-600 flex items-center gap-2 mt-1">
+                                    <Mail className="w-4 h-4 text-emerald-600" />
                                     {student.email}
                                   </div>
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <div className="text-sm space-y-1">
-                                <div className="flex items-center gap-1">
-                                  <Phone className="w-3 h-3 text-muted-foreground" />
-                                  <span>{student.phone}</span>
+                            <TableCell className="py-4">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Phone className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                  <span className="font-medium">{student.phone}</span>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3 text-muted-foreground" />
-                                  <span>{new Date(student.dateOfBirth).toLocaleDateString()}</span>
+                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                  <Calendar className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                  <span>Born: {new Date(student.dateOfBirth).toLocaleDateString()}</span>
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="py-4">
                               <div className="flex items-center gap-2">
-                                <GraduationCap className="w-4 h-4 text-muted-foreground" />
-                                <span className="font-medium">{student.education}</span>
+                                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                                  <GraduationCap className="w-5 h-5 text-amber-600" />
+                                </div>
+                                <span className="font-semibold text-slate-700">{student.education}</span>
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
+                            <TableCell className="py-4">
+                              <div className="flex flex-wrap gap-2 max-w-xs">
                                 {student.interestedCourses.map((course, index) => (
                                   <Badge 
                                     key={index} 
                                     variant="outline" 
-                                    className="bg-blue-50 text-blue-700 border-blue-200 text-xs"
+                                    className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-2 py-1"
                                   >
                                     {course.name}
                                   </Badge>
                                 ))}
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <div className="text-sm">
+                            <TableCell className="py-4">
+                              <div className="max-w-xs">
                                 {student.notes ? (
-                                  <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 max-w-xs">
-                                    {student.notes}
+                                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
+                                    <div className="flex items-start gap-2">
+                                      <i className="fas fa-sticky-note text-amber-600 mt-0.5 flex-shrink-0"></i>
+                                      <span>{student.notes}</span>
+                                    </div>
                                   </div>
                                 ) : (
-                                  <span className="text-muted-foreground">No notes</span>
+                                  <span className="text-slate-400 italic">No additional notes</span>
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <div className="text-sm text-muted-foreground">
-                                {new Date(student.forwardedAt).toLocaleDateString()}
+                            <TableCell className="py-4">
+                              <div className="text-sm">
+                                <div className="font-medium text-slate-700">
+                                  {new Date(student.forwardedAt).toLocaleDateString()}
+                                </div>
+                                <div className="text-slate-500 text-xs">
+                                  {new Date(student.forwardedAt).toLocaleTimeString()}
+                                </div>
                               </div>
                             </TableCell>
                           </TableRow>
